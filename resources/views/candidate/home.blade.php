@@ -99,7 +99,7 @@
 </main>
 
 <footer class="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-slate-400">
-    <span>© {{ date('Y') }} {{ $appName }}. All rights reserved.</span>
+    <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
     <span class="flex gap-4"><a href="#" class="hover:text-slate-600">Privacy</a><a href="#" class="hover:text-slate-600">Terms</a><a href="mailto:support@examnex.test" class="hover:text-slate-600">Support</a></span>
 </footer>
 </body>
