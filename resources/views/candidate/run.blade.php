@@ -25,7 +25,7 @@
     $tag1 = $test->category ?: 'Assessment';
 @endphp
 <body class="h-full overflow-hidden bg-gradient-to-b from-[#eaf1fb] to-[#f4f8fd] text-slate-800 {{ $test->detect_copy ? 'no-copy' : '' }}">
-<div class="h-dvh flex flex-col">
+<div class="app-shell flex flex-col">
 
     {{-- ===== Header ===== --}}
     <header class="bg-white border-b border-slate-100 shrink-0">

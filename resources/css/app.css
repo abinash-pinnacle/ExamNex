@@ -22,3 +22,8 @@
         }
     }
 }
+
+/* Fixed app shell height: 100vh everywhere, upgraded to 100dvh where supported.
+   (Plain h-dvh can collapse to auto on browsers that ignore dvh, which lets the
+   whole page scroll and the header drift — this keeps the shell viewport-locked.) */
+.app-shell { height: 100vh; height: 100dvh; }
