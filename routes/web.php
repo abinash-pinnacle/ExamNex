@@ -15,29 +15,10 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// ---- Public entry ----
+// ---- Public entry: guests see the login screen on the bare URL (no /login redirect) ----
 Route::get('/', fn () => auth()->check()
     ? redirect(AuthController::home(auth()->user()))
-    : redirect()->route('login'));
-
-// ---- One-time deployment setup (browser, no SSH needed). Remove SETUP_KEY after use. ----
-Route::get('/deploy-setup/{key}', function (string $key) {
-    $expected = env('SETUP_KEY');
-    abort_unless($expected && hash_equals((string) $expected, $key), 404);
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    $migrate = \Illuminate\Support\Facades\Artisan::output();
-    // Seed only if there are no users yet (fresh install).
-    $seeded = 'skipped (data already exists)';
-    if (\App\Models\User::count() === 0) {
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        $seeded = 'done';
-    }
-    \Illuminate\Support\Facades\Artisan::call('optimize');
-    return response('<pre style="font:14px monospace;padding:20px">'
-        . "ExamNex setup complete.\n\nMigrations:\n" . e($migrate)
-        . "\nSeed: {$seeded}\n\nLogin: admin@examnex.test / password"
-        . "\n\n⚠ SECURITY: remove the SETUP_KEY line from your .env now, then reload.\n</pre>");
-});
+    : app(AuthController::class)->showLogin());
 
 // ---- Auth ----
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
