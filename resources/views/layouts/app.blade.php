@@ -124,8 +124,16 @@
 
 <script>
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('-translate-x-full');
-        document.getElementById('overlay').classList.toggle('hidden');
+        const sb = document.getElementById('sidebar');
+        const ov = document.getElementById('overlay');
+        if (window.matchMedia('(min-width: 1024px)').matches) {
+            // Desktop: collapse / expand the static sidebar
+            sb.classList.toggle('lg:hidden');
+        } else {
+            // Mobile: slide the drawer in / out
+            sb.classList.toggle('-translate-x-full');
+            ov.classList.toggle('hidden');
+        }
     }
     document.addEventListener('click', e => {
         const m = document.getElementById('userMenu');
