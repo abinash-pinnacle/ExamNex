@@ -22,8 +22,10 @@ class GradingController extends Controller
 
     public function grade(Request $request, AttemptAnswer $answer)
     {
+        $answer->loadMissing('question');
+        $max = (float) ($answer->question->marks ?? 0);
         $data = $request->validate([
-            'awarded_marks' => 'required|numeric|min:0',
+            'awarded_marks' => 'required|numeric|min:0|max:' . $max,
             'feedback' => 'nullable|string',
         ]);
         AttemptService::gradeDescriptive($answer->id, (float) $data['awarded_marks'], $data['feedback'] ?? null, $request->user()->id);

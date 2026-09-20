@@ -35,16 +35,17 @@ privileges). Copy the **DB name, user, password, host** (host is usually `localh
 hPanel → **Advanced → PHP Configuration** → PHP **8.2 or 8.3**, and enable:
 `pdo_mysql, mbstring, intl, gd, zip, curl, openssl, fileinfo`.
 
-## 6. Run the one-time setup (creates tables + demo login)
-Open in browser:
+## 6. Generate the app key + run the one-time setup (via SSH)
+Enable **SSH** for the site (hPanel → Advanced → SSH Access), connect, `cd` into
+the app folder, then run:
 ```
-https://exam.cmsnmietbschool.in/deploy-setup/YOUR_SETUP_KEY
+php artisan key:generate --force
+php artisan migrate --force
+php artisan db:seed --force
+php artisan optimize
 ```
-It runs migrations + seeds demo data. When it says "complete":
-**delete the `SETUP_KEY` line from `.env`** and reload.
-
-> If your plan has **SSH**, you can skip step 6 and instead run:
-> `php artisan migrate --force && php artisan db:seed --force && php artisan optimize`
+`key:generate` writes a fresh `APP_KEY` into `.env` (never reuse a key from the
+repo or another environment). This creates the tables and the demo admin login.
 
 ## 7. Enable SSL (https)
 hPanel → **Security → SSL** → install free SSL for the subdomain. Done.

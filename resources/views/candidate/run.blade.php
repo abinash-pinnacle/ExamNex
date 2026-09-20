@@ -118,7 +118,7 @@
                                 @foreach (['1'=>'True','0'=>'False'] as $v=>$lbl)
                                     <label class="flex items-center gap-3 border rounded-xl px-4 py-3.5 cursor-pointer transition border-slate-200 hover:border-brand/50 has-[:checked]:border-brand has-[:checked]:bg-blue-50">
                                         <input type="radio" name="q{{ $q->id }}" value="{{ $v }}"
-                                               @checked($ans && $ans->bool_answer === ($v==='1')) onchange="onAnswer({{ $q->id }})"
+                                               @checked($ans && $ans->bool_answer === ($v == 1)) onchange="onAnswer({{ $q->id }})"
                                                class="answer-input w-5 h-5 shrink-0" style="accent-color:rgb(var(--brand-rgb))">
                                         <span class="text-slate-700 font-medium">{{ $lbl }}</span>
                                     </label>
@@ -308,7 +308,17 @@ let violations = 0;
 let terminated = false;
 
 function logViolation() {
-    try { navigator.sendBeacon ? navigator.sendBeacon(EVENT_URL) : fetch(EVENT_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF } }); } catch (_) {}
+    // Send the CSRF token IN THE BODY so the beacon passes VerifyCsrfToken
+    // (sendBeacon cannot set headers). Otherwise the POST 419s and the server
+    // never records the violation.
+    try {
+        if (navigator.sendBeacon) {
+            const body = new Blob(['_token=' + encodeURIComponent(CSRF)], { type: 'application/x-www-form-urlencoded' });
+            navigator.sendBeacon(EVENT_URL, body);
+        } else {
+            fetch(EVENT_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF }, keepalive: true });
+        }
+    } catch (_) {}
 }
 function handleViolation(reason) {
     if (terminated || submitting) return;

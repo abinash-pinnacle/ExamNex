@@ -138,12 +138,42 @@ class AttemptService
         return ['ok' => true, 'savedAt' => $savedAt->toIso8601String()];
     }
 
-    public static function logExamEvent(int $attemptId, int $candidateId): void
+    /**
+     * Record an integrity violation (e.g. left the exam window) and enforce the
+     * warning limit ON THE SERVER. The client's terminate logic is only UX; the
+     * server is authoritative, so a tampered/JS-disabled client cannot dodge FAIL.
+     * @return array{ok: bool, terminated: bool}
+     */
+    public static function logExamEvent(int $attemptId, int $candidateId): array
     {
-        Attempt::where('id', $attemptId)
+        $attempt = Attempt::where('id', $attemptId)
             ->where('candidate_id', $candidateId)
             ->where('status', 'IN_PROGRESS')
-            ->increment('violations');
+            ->first();
+        if (! $attempt) {
+            return ['ok' => true, 'terminated' => false];
+        }
+        $attempt->increment('violations');
+        $attempt->refresh();
+
+        $test = $attempt->test;
+        // Mirror the client rule: with warnings, 1 warning is allowed then terminate;
+        // without warnings, terminate on the first violation. Only tests that opt
+        // into tab-switch prevention terminate.
+        if ($test && $test->prevent_tab_switch) {
+            $limit = $test->show_warning ? 1 : 0;
+            if ($attempt->violations > $limit) {
+                self::finalize($attemptId, $candidateId, 'AUTO_SUBMITTED');
+                Attempt::where('id', $attemptId)->update([
+                    'terminated' => true,
+                    'passed' => false,
+                    'status' => 'EVALUATED',
+                ]);
+                Audit::log('attempt.terminated', ['entity' => 'Attempt', 'entity_id' => $attemptId, 'detail' => ['server' => true, 'violations' => $attempt->violations]]);
+                return ['ok' => true, 'terminated' => true];
+            }
+        }
+        return ['ok' => true, 'terminated' => false];
     }
 
     public static function submit(int $attemptId, int $candidateId, bool $auto = false, bool $terminated = false): array

@@ -59,6 +59,7 @@ class QuestionController extends Controller
 
     public function store(Request $request)
     {
+        $this->validateQuestion($request);
         $input = $this->buildInput($request);
         $res = QuestionService::create($input, $request->user()->id);
         return $this->respond($res, 'Question created.');
@@ -66,9 +67,25 @@ class QuestionController extends Controller
 
     public function update(Request $request, Question $question)
     {
+        $this->validateQuestion($request);
         $input = $this->buildInput($request);
         $res = QuestionService::update($question->id, $input, $request->user()->id);
         return $this->respond($res, 'Question updated.');
+    }
+
+    /** Reject blank / symbol-only text and unknown question types before saving. */
+    private function validateQuestion(Request $request): void
+    {
+        $request->validate([
+            'text' => 'required|string|max:5000',
+            'type' => ['required', \Illuminate\Validation\Rule::in(['MCQ_SINGLE', 'MCQ_MULTI', 'TRUE_FALSE', 'FILL_BLANK', 'NUMERIC', 'DESCRIPTIVE'])],
+        ], [], ['text' => 'question text']);
+
+        if (\App\Support\Normalizer::questionText((string) $request->input('text')) === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'text' => 'Question text cannot be blank or symbols only.',
+            ]);
+        }
     }
 
     public function destroy(Question $question)
@@ -95,7 +112,7 @@ class QuestionController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv,txt',
+            'file' => 'required|file|mimes:xlsx,xls,csv',
             'folder' => 'nullable|string',
             'subject' => 'nullable|string',
             'topic' => 'nullable|string',

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // AI question generation (read via config so it survives `php artisan config:cache`).
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+    ],
+
 ];

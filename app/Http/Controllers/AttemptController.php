@@ -61,8 +61,8 @@ class AttemptController extends Controller
     public function event(Request $request, Attempt $attempt)
     {
         abort_unless($attempt->candidate_id === $request->user()->id, 403);
-        AttemptService::logExamEvent($attempt->id, $request->user()->id);
-        return response()->json(['ok' => true]);
+        $res = AttemptService::logExamEvent($attempt->id, $request->user()->id);
+        return response()->json(['ok' => true, 'terminated' => $res['terminated'] ?? false]);
     }
 
     public function submit(Request $request, Attempt $attempt)

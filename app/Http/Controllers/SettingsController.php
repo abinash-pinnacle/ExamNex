@@ -23,7 +23,7 @@ class SettingsController extends Controller
             'brand_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'conducted_by' => 'nullable|string|max:80',
             'conducted_by_sub' => 'nullable|string|max:80',
-            'logo' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:2048',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
         ]);
         Setting::putMany(collect($data)->except('logo')->all());
 
@@ -32,7 +32,7 @@ class SettingsController extends Controller
             if (! is_dir($dir)) {
                 @mkdir($dir, 0775, true);
             }
-            $name = 'logo-' . time() . '.' . $request->file('logo')->getClientOriginalExtension();
+            $name = 'logo-' . time() . '.' . ($request->file('logo')->extension() ?: 'png');
             $request->file('logo')->move($dir, $name);
             Setting::put('org_logo', '/uploads/' . $name);
         } elseif ($request->boolean('remove_logo')) {

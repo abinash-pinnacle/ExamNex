@@ -119,11 +119,11 @@ class Gemini
     /** @return array{ok: bool, items?: array, error?: string} */
     private static function call(string $prompt, string $type): array
     {
-        $key = env('GEMINI_API_KEY');
+        $key = config('services.gemini.key');
         if (! $key) {
             return ['ok' => false, 'error' => 'Gemini API key not configured. Add GEMINI_API_KEY to the .env file.'];
         }
-        $model = env('GEMINI_MODEL', 'gemini-3.6-flash');
+        $model = config('services.gemini.model') ?: 'gemini-3.6-flash';
         $payload = [
             'contents' => [['parts' => [['text' => $prompt]]]],
             'generationConfig' => [

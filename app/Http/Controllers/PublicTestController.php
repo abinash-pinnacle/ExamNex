@@ -67,16 +67,30 @@ class PublicTestController extends Controller
             return back()->withInput()->withErrors(['register' => 'Incorrect test password.']);
         }
 
-        // Find-or-create candidate, deduped by student_id.
-        $user = User::where('student_id', $d['student_id'])->first();
+        // Find-or-create candidate. SECURITY: only ever reuse an account that was
+        // itself created by THIS public flow (role CANDIDATE + pc.*@public.exam).
+        // Never authenticate a pre-provisioned candidate or staff account that
+        // merely happens to share this (guessable) student_id — that would be
+        // account takeover.
+        $user = User::where('student_id', $d['student_id'])
+            ->where('role', 'CANDIDATE')
+            ->where('email', 'like', 'pc.%@public.exam')
+            ->first();
         if (! $user) {
-            $slug = Str::slug($d['student_id']) ?: Str::random(8);
+            // If the roll number already belongs to some other (non-public) account,
+            // keep this self-registrant on a distinct student_id so we never collide
+            // with or log into that account.
+            $sid = $d['student_id'];
+            if (User::where('student_id', $sid)->exists()) {
+                $sid .= '-' . Str::lower(Str::random(6));
+            }
+            $slug = Str::slug($sid) ?: Str::random(8);
             $user = User::create([
                 'email' => "pc.{$slug}@public.exam",
                 'name' => $d['full_name'],
                 'role' => 'CANDIDATE',
                 'password' => Str::uuid()->toString(), // login-less; hashed by cast
-                'student_id' => $d['student_id'],
+                'student_id' => $sid,
                 'contact' => $d['contact'],
                 'batch' => $d['department'] ?? null,
             ]);

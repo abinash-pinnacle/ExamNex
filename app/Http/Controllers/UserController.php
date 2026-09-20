@@ -88,6 +88,9 @@ class UserController extends Controller
         if ($user->id === $request->user()->id) {
             return back()->withErrors(['user' => 'You cannot disable your own account.']);
         }
+        if (in_array($user->role, ['ADMIN', 'TEST_CREATOR'], true) && ! $request->user()->isAdmin()) {
+            abort(403, 'Only an admin can enable or disable staff accounts.');
+        }
         $user->update(['is_active' => ! $user->is_active]);
         Audit::log('user.toggle', ['entity' => 'User', 'entity_id' => $user->id, 'detail' => ['active' => $user->is_active]]);
         return back()->with('status', 'Updated.');

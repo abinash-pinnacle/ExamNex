@@ -21,6 +21,9 @@ class Normalizer
         // Drop anything that is not a letter, number or whitespace (Unicode-aware).
         $t = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $t);
         $t = preg_replace('/\s+/u', ' ', $t);
-        return trim($t);
+        // Cap to the normalized_text column width (VARCHAR(500)) so long
+        // comprehension/passage questions can't overflow it (MySQL 1406) — the
+        // first 500 normalized chars are more than enough to detect duplicates.
+        return mb_substr(trim($t), 0, 500);
     }
 }
