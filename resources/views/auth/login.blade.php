@@ -154,13 +154,6 @@
             </p>
         </div>
 
-        <div class="absolute bottom-6 right-6 flex items-center gap-4 text-xs text-slate-400">
-            <a href="#" class="hover:text-slate-600">Privacy</a>
-            <span>|</span>
-            <a href="#" class="hover:text-slate-600">Terms</a>
-            <span>|</span>
-            <a href="mailto:support@examnex.test" class="hover:text-slate-600">Support</a>
-        </div>
     </div>
 </div>
 

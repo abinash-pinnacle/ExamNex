@@ -212,7 +212,6 @@
             <span class="hidden sm:inline">Secure Assessment Environment · monitored</span>
         </span>
         <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
-        <span class="flex gap-3"><a href="#" class="hover:text-slate-600">Privacy</a><a href="#" class="hover:text-slate-600">Terms</a><a href="mailto:support@examnex.test" class="hover:text-slate-600">Support</a></span>
     </footer>
 </div>
 

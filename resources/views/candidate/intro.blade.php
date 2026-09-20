@@ -181,9 +181,8 @@
         </div>
     </main>
 
-    <footer class="shrink-0 max-w-6xl mx-auto w-full px-6 py-3 flex items-center justify-between text-[11px] text-slate-400">
+    <footer class="shrink-0 max-w-6xl mx-auto w-full px-6 py-3 flex items-center justify-center text-center text-[11px] text-slate-400">
         <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
-        <span class="flex gap-4"><a href="#" class="hover:text-slate-600">Privacy</a><a href="#" class="hover:text-slate-600">Terms</a><a href="mailto:support@examnex.test" class="hover:text-slate-600">Support</a></span>
     </footer>
 </div>
 
