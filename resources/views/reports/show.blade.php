@@ -21,7 +21,7 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-    <table class="w-full text-sm">
+    <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
         <thead class="bg-slate-50 text-slate-500 text-left">
             <tr><th class="px-4 py-2">Candidate</th><th class="px-4 py-2">Student ID</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Score</th><th class="px-4 py-2">Result</th><th class="px-4 py-2">Submitted</th></tr>
         </thead>
@@ -44,6 +44,6 @@
                 <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No attempts.</td></tr>
             @endforelse
         </tbody>
-    </table>
+    </table></div>
 </div>
 @endsection

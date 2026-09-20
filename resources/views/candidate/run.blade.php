@@ -25,11 +25,11 @@
     $tag1 = $test->category ?: 'Assessment';
 @endphp
 <body class="h-full overflow-hidden bg-gradient-to-b from-[#eaf1fb] to-[#f4f8fd] text-slate-800 {{ $test->detect_copy ? 'no-copy' : '' }}">
-<div class="h-screen flex flex-col">
+<div class="h-dvh flex flex-col">
 
     {{-- ===== Header ===== --}}
     <header class="bg-white border-b border-slate-100 shrink-0">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
             <div class="flex items-center gap-3 shrink-0">
                 <x-brand-logo size="w-11 h-11" icon="w-6 h-6" />
                 <div class="leading-tight">
@@ -77,7 +77,7 @@
     </div>
 
     {{-- ===== Body ===== --}}
-    <main class="flex-1 min-h-0 max-w-7xl w-full mx-auto px-6 py-4 grid grid-cols-1 lg:grid-cols-3 gap-5 overflow-y-auto lg:overflow-hidden">
+    <main class="flex-1 min-h-0 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-3 gap-5 overflow-y-auto lg:overflow-hidden">
         {{-- Question area --}}
         <section class="lg:col-span-2 lg:min-h-0 flex flex-col">
             @foreach ($paper as $i => $item)

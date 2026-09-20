@@ -32,7 +32,7 @@
 </div>
 
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-    <table class="w-full text-sm">
+    <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
         <thead class="bg-slate-50 text-slate-500 text-left">
             <tr>
                 <th class="px-4 py-3">Candidate</th>
@@ -105,7 +105,7 @@
                 <tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">No candidates assigned to this test yet.</td></tr>
             @endforelse
         </tbody>
-    </table>
+    </table></div>
 </div>
 <p class="text-xs text-slate-400 mt-3">Auto-refreshes every 15 seconds · rows highlighted red = violations / terminated (possible cheating).</p>
 

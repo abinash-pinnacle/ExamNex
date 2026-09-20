@@ -26,7 +26,7 @@
         @if ($editing) @method('PUT') @endif
 
         {{-- Hierarchy --}}
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
                 <label class="block text-sm font-medium mb-1">Folder</label>
                 <input name="folder" list="folders" value="{{ old('folder', $question->category ?? '') }}" required

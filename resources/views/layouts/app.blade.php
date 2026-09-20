@@ -30,7 +30,7 @@
     ];
 @endphp
 
-<div class="h-screen overflow-hidden flex">
+<div class="h-dvh overflow-hidden flex">
     {{-- ===== SIDEBAR ===== --}}
     <aside id="sidebar" class="fixed lg:static z-40 inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col -translate-x-full lg:translate-x-0 transition-transform">
         <div class="h-20 flex items-center gap-3 px-6 border-b border-slate-100">

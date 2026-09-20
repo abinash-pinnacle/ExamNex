@@ -72,7 +72,7 @@
         </h2>
         <p class="text-xs text-slate-400 mb-4">Pre-filled when creating a new test.</p>
         <form method="POST" action="{{ route('settings.examDefaults') }}" class="space-y-4">@csrf
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium mb-1">Duration (min)</label>
                     <input name="default_duration" type="number" min="1" value="{{ old('default_duration', \App\Models\Setting::get('default_duration')) }}" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 focus:ring-2 focus:ring-brand outline-none">

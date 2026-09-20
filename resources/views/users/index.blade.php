@@ -29,7 +29,7 @@
             <button class="bg-brand text-white px-4 rounded-lg">Go</button>
         </form>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <table class="w-full text-sm">
+            <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
                 <thead class="bg-slate-50 text-slate-500 text-left"><tr><th class="px-4 py-2">Name</th><th class="px-4 py-2">Role</th><th class="px-4 py-2">Active</th><th></th></tr></thead>
                 <tbody class="divide-y">
                     @forelse ($users as $u)
@@ -52,7 +52,7 @@
                         <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No staff accounts.</td></tr>
                     @endforelse
                 </tbody>
-            </table>
+            </table></div>
         </div>
         <div class="mt-3">{{ $users->links() }}</div>
     </div>

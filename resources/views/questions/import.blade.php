@@ -14,7 +14,7 @@
                 <label class="block text-sm font-medium mb-1">Excel (.xlsx / .xls) or CSV file</label>
                 <input type="file" name="file" accept=".xlsx,.xls,.csv" required class="block w-full text-sm">
             </div>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input name="folder" placeholder="Default folder" class="rounded-lg border-slate-300 border px-3 py-2 text-sm">
                 <input name="subject" placeholder="Default subject" class="rounded-lg border-slate-300 border px-3 py-2 text-sm">
                 <input name="topic" placeholder="Default topic" class="rounded-lg border-slate-300 border px-3 py-2 text-sm">
@@ -36,21 +36,21 @@
     @if ($result)
         <div class="bg-white rounded-xl shadow-sm p-6">
             <div class="font-semibold mb-3">Import result</div>
-            <div class="grid grid-cols-4 gap-3 text-center mb-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-4">
                 <div class="bg-slate-50 rounded-lg p-3"><div class="text-2xl font-bold">{{ $result['total'] }}</div><div class="text-xs text-slate-500">rows</div></div>
                 <div class="bg-emerald-50 rounded-lg p-3"><div class="text-2xl font-bold text-emerald-700">{{ $result['created'] }}</div><div class="text-xs text-slate-500">created</div></div>
                 <div class="bg-amber-50 rounded-lg p-3"><div class="text-2xl font-bold text-amber-700">{{ $result['duplicates'] }}</div><div class="text-xs text-slate-500">duplicates</div></div>
                 <div class="bg-rose-50 rounded-lg p-3"><div class="text-2xl font-bold text-rose-700">{{ $result['invalid'] }}</div><div class="text-xs text-slate-500">invalid</div></div>
             </div>
             @if (count($result['rejected']))
-                <table class="w-full text-sm">
+                <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
                     <thead class="text-left text-slate-500"><tr><th class="py-1">Row</th><th>Kind</th><th>Reason</th></tr></thead>
                     <tbody class="divide-y">
                         @foreach ($result['rejected'] as $r)
                             <tr><td class="py-1">{{ $r['row'] }}</td><td>{{ $r['kind'] }}</td><td class="text-slate-600">{{ $r['reason'] }}</td></tr>
                         @endforeach
                     </tbody>
-                </table>
+                </table></div>
             @endif
         </div>
     @endif

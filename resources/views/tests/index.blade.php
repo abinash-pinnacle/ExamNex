@@ -7,7 +7,7 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-    <table class="w-full text-sm">
+    <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
         <thead class="bg-slate-50 text-slate-500 text-left">
             <tr><th class="px-4 py-2">Title</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Questions</th><th class="px-4 py-2">Marks</th><th class="px-4 py-2">Duration</th><th class="px-4 py-2">Attempts</th><th class="px-4 py-2"></th></tr>
         </thead>
@@ -31,7 +31,7 @@
                 <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No tests yet.</td></tr>
             @endforelse
         </tbody>
-    </table>
+    </table></div>
 </div>
 <div class="mt-4">{{ $tests->links() }}</div>
 @endsection

@@ -3,7 +3,7 @@
 @section('content')
 <h1 class="text-2xl font-bold mb-5">Reports</h1>
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-    <table class="w-full text-sm">
+    <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
         <thead class="bg-slate-50 text-slate-500 text-left">
             <tr><th class="px-4 py-2">Test</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Attempts</th><th class="px-4 py-2"></th></tr>
         </thead>
@@ -22,6 +22,6 @@
                 <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">No tests with reports yet.</td></tr>
             @endforelse
         </tbody>
-    </table>
+    </table></div>
 </div>
 @endsection

@@ -6,4 +6,19 @@
     body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+
+    /* Mobile: 16px inputs stop iOS from auto-zooming the page on focus */
+    @media (max-width: 640px) {
+        input:not([type="checkbox"]):not([type="radio"]),
+        select,
+        textarea { font-size: 16px; }
+    }
+
+    /* Respect notch / safe areas on small screens (0 on normal devices) */
+    @media (max-width: 1023px) {
+        body {
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+    }
 }
