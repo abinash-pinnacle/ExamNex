@@ -161,7 +161,8 @@ class Gemini
 
         if (! $res->successful()) {
             $detail = $res->json('error.message', '');
-            if ($res->status() === 400 && preg_match('/API key/i', $detail)) return ['ok' => false, 'error' => 'Invalid Gemini API key.'];
+            if ($res->status() === 401 || ($res->status() === 400 && preg_match('/API key|credential/i', $detail)))
+                return ['ok' => false, 'error' => 'Invalid Gemini API key. Create a key at https://aistudio.google.com/apikey (it starts with "AIza") and set GEMINI_API_KEY in .env.'];
             if ($res->status() === 429) return ['ok' => false, 'error' => 'Gemini rate limit hit — wait a moment and try again.'];
             if ($res->status() === 503) return ['ok' => false, 'error' => 'Gemini is busy right now — please try again in a minute.'];
             if ($res->status() === 404) return ['ok' => false, 'error' => "Model unavailable: {$detail} Set GEMINI_MODEL to a current model."];

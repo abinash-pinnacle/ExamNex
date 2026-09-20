@@ -87,7 +87,14 @@
         </a>
 
         <div class="w-full max-w-md">
-            <h2 class="text-4xl font-extrabold text-slate-900 text-center">Welcome Back</h2>
+            @php $appNameM = \App\Models\Setting::get('org_name', config('app.name')); @endphp
+            <div class="lg:hidden flex flex-col items-center gap-2.5 mb-6">
+                <x-brand-logo size="w-14 h-14" icon="w-8 h-8" />
+                <div class="text-2xl font-extrabold tracking-tight text-slate-900">
+                    @if ($appNameM === 'ExamNex')Exam<span class="text-brand">Nex</span>@else{{ $appNameM }}@endif
+                </div>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 text-center">Welcome Back</h2>
             <p class="mt-2 text-center text-slate-500">Sign in to access your ExamNex account</p>
 
             @if ($errors->any())
