@@ -1,0 +1,44 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: examnex-db
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: examnex
+      MYSQL_USER: examnex
+      MYSQL_PASSWORD: examnex
+    ports:
+      - "3308:3306"          # host:container — 3308 avoids clashes with other local DBs
+    volumes:
+      - examnex-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uexamnex", "-pexamnex"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    container_name: examnex-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: examnex
+      DB_USERNAME: examnex
+      DB_PASSWORD: examnex
+      # Gemini key for AI question generation:
+      GEMINI_API_KEY: "AQ.Ab8RN6JnP6vxEFN3cNpq7-LIiqt3fUOyGCb7m-f3m5CgwbXSpg"
+      GEMINI_MODEL: "gemini-3.6-flash"
+    ports:
+      - "8000:8000"          # open http://localhost:8000
+    volumes:
+      - examnex-uploads:/var/www/html/public/uploads   # persist uploaded logos across rebuilds
+    restart: unless-stopped
+
+volumes:
+  examnex-db-data:
+  examnex-uploads:

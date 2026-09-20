@@ -1,0 +1,9 @@
+{
+    "private": true,
+    "scripts": {
+        "build:css": "tailwindcss -i resources/css/app.css -o public/css/app.css --minify"
+    },
+    "devDependencies": {
+        "tailwindcss": "^3.4.17"
+    }
+}
