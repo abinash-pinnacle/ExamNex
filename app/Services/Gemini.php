@@ -123,7 +123,7 @@ class Gemini
         if (! $key) {
             return ['ok' => false, 'error' => 'Gemini API key not configured. Add GEMINI_API_KEY to the .env file.'];
         }
-        $model = env('GEMINI_MODEL', 'gemini-2.0-flash');
+        $model = env('GEMINI_MODEL', 'gemini-3.6-flash');
         $payload = [
             'contents' => [['parts' => [['text' => $prompt]]]],
             'generationConfig' => [
