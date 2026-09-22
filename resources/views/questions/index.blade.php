@@ -13,7 +13,7 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:flex-1 lg:min-h-0">
     {{-- Folder tree + management --}}
-    <aside class="lg:col-span-1 space-y-4 lg:overflow-y-auto lg:min-h-0 lg:pr-1">
+    <aside class="lg:col-span-1 min-w-0 space-y-4 lg:overflow-y-auto lg:overflow-x-hidden lg:min-h-0 lg:pr-1">
         {{-- Tree --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
             <div class="flex items-center justify-between mb-3">
@@ -27,7 +27,7 @@
                 <span class="text-xs {{ !request('topic_id') ? 'text-white/80' : 'text-slate-400' }}">{{ $totalQuestions }}</span>
             </a>
 
-            <div class="space-y-1 max-h-[28rem] lg:max-h-none overflow-y-auto pr-1">
+            <div class="space-y-1 max-h-[28rem] lg:max-h-none overflow-y-auto overflow-x-hidden pr-1">
                 @forelse ($folders as $folder)
                     @php $fCount = $folder->subjects->flatMap->topics->sum('questions_count'); @endphp
                     <details class="group" open>
@@ -89,7 +89,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 space-y-3 text-sm">
             <div class="font-bold text-slate-800">➕ Add to hierarchy</div>
             <form method="POST" action="{{ route('folders.store') }}" class="flex gap-1">@csrf
-                <input name="name" placeholder="New folder" required class="flex-1 rounded-lg border-slate-300 border px-2.5 py-1.5">
+                <input name="name" placeholder="New folder" required class="flex-1 min-w-0 rounded-lg border-slate-300 border px-2.5 py-1.5">
                 <button class="bg-brand text-white px-3 rounded-lg font-medium">Add</button>
             </form>
             <form method="POST" action="{{ route('subjects.store') }}" class="space-y-1.5">@csrf
@@ -98,7 +98,7 @@
                     @foreach ($folders as $f)<option value="{{ $f->id }}">{{ $f->name }}</option>@endforeach
                 </select>
                 <div class="flex gap-1">
-                    <input name="name" placeholder="New subject" required class="flex-1 rounded-lg border-slate-300 border px-2.5 py-1.5">
+                    <input name="name" placeholder="New subject" required class="flex-1 min-w-0 rounded-lg border-slate-300 border px-2.5 py-1.5">
                     <button class="bg-brand text-white px-3 rounded-lg font-medium">Add</button>
                 </div>
             </form>
@@ -110,7 +110,7 @@
                     @endforeach @endforeach
                 </select>
                 <div class="flex gap-1">
-                    <input name="name" placeholder="New topic" required class="flex-1 rounded-lg border-slate-300 border px-2.5 py-1.5">
+                    <input name="name" placeholder="New topic" required class="flex-1 min-w-0 rounded-lg border-slate-300 border px-2.5 py-1.5">
                     <button class="bg-brand text-white px-3 rounded-lg font-medium">Add</button>
                 </div>
             </form>
