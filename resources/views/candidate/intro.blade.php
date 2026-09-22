@@ -25,7 +25,7 @@
     $canStart = $status === 'available' && ! $usedUp;
 @endphp
 <body class="h-full overflow-x-hidden bg-gradient-to-b from-[#eaf1fb] to-[#f4f8fd] text-slate-800">
-<div class="min-h-screen flex flex-col">
+<div class="app-shell flex flex-col overflow-hidden">
 
     {{-- ===== Header ===== --}}
     <header class="bg-white border-b border-slate-100 shrink-0">
@@ -48,7 +48,8 @@
     </header>
 
     {{-- ===== Content (fills remaining height, centered) ===== --}}
-    <main class="flex-1 flex flex-col justify-center max-w-6xl w-full mx-auto px-6 py-4">
+    <main class="flex-1 min-h-0 overflow-y-auto">
+    <div class="min-h-full flex flex-col justify-center max-w-6xl w-full mx-auto px-6 py-4">
         {{-- Hero --}}
         <div class="relative text-center mb-4">
             <span class="hand hidden lg:block absolute left-0 top-0 text-xl text-blue-300 leading-tight -rotate-6">Assess<br>Learn<br>Grow</span>
@@ -179,6 +180,7 @@
                 leaving this page during the test may terminate your session and you will be <span class="font-bold text-rose-600">marked as FAIL</span>. Stay here until you submit.
             </p>
         </div>
+    </div>
     </main>
 
     <footer class="shrink-0 max-w-6xl mx-auto w-full px-6 py-3 flex items-center justify-center text-center text-[11px] text-slate-400">
