@@ -7,8 +7,8 @@
 
 @if ($pending->count())
 <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4 text-sm text-slate-600 leading-relaxed">
-    <b class="text-slate-800">Yahan written (descriptive) answers ko marks do.</b> Har answer ko upar diye <b>Model</b> answer se compare karo → <b>Marks (0–max)</b> daalo → <b>Save grade</b> dabao.
-    MCQ / True-False auto-check ho jaate hain, isliye sirf likhe hue answers yahan aate hain. Jab kisi candidate ke <b>saare</b> answers grade ho jaate hain, uska <b>result (Pass/Fail) apne aap</b> ban jaata hai.
+    <b class="text-slate-800">Score written (descriptive) answers here.</b> Compare each answer to the <b>Model</b> answer above → enter <b>Marks (0–max)</b> → click <b>Save grade</b>.
+    MCQ and True/False questions are graded automatically, so only written answers appear here. Once all of a candidate's answers are graded, their <b>result (Pass/Fail)</b> is calculated automatically.
 </div>
 @endif
 

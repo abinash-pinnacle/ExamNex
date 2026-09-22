@@ -112,7 +112,7 @@
                         </span>
                         <div class="min-w-0">
                             <div class="font-bold text-slate-800 text-sm">Passing Criteria <span class="text-rose-500">*</span></div>
-                            <div class="text-xs text-slate-400">Kitne marks pe candidate <b>PASS</b> hoga — % of total (recommended) ya fixed marks.</div>
+                            <div class="text-xs text-slate-400">The score a candidate needs to <b>PASS</b> — as a % of total (recommended) or fixed marks.</div>
                         </div>
                     </div>
                     <input type="hidden" name="passing_mode" id="passing_mode" value="{{ $passMode }}">
