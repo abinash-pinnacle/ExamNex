@@ -10,7 +10,7 @@ class Test extends Model
 {
     protected $fillable = [
         'title', 'description', 'subject', 'category', 'audience', 'status',
-        'duration_minutes', 'total_marks', 'passing_marks',
+        'duration_minutes', 'total_marks', 'passing_marks', 'passing_percent',
         'negative_marking_on', 'shuffle_questions', 'shuffle_options',
         'max_attempts', 'public_access', 'access_code', 'max_candidates',
         'result_visibility', 'issue_certificate', 'instructions',
@@ -51,6 +51,7 @@ class Test extends Model
             'feedback_form' => 'boolean',
             'require_registration' => 'boolean',
             'is_template' => 'boolean',
+            'passing_percent' => 'integer',
         ];
     }
 

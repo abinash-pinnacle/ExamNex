@@ -14,6 +14,11 @@
         return $src ? (bool) $src->$f : $def;
     };
     $qorder = old('question_order', $src->question_order ?? 'SHUFFLE');
+    // Passing criteria (percentage of total, or fixed marks)
+    $passPercent = old('passing_percent', $src->passing_percent ?? null);
+    $passMarks = (int) old('passing_marks', $src->passing_marks ?? 0);
+    $passMode = old('passing_mode', ($passPercent !== null) ? 'percent' : ($editing && !($src->passing_percent ?? null) ? 'marks' : 'percent'));
+    $passPercentVal = $passPercent ?? (int) $S('default_passing_percent', 40);
 @endphp
 
 <div class="flex items-center gap-2 text-sm text-slate-500 mb-3 shrink-0">
@@ -93,11 +98,39 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                     <div><label class="block text-sm font-medium mb-1">Duration (min) <span class="text-rose-500">*</span></label><input name="duration_minutes" id="pv_dur" type="number" min="1" value="{{ $v('duration_minutes', $S('default_duration', 60)) }}" oninput="syncPreview()" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-brand outline-none"></div>
                     <div><label class="block text-sm font-medium mb-1">Total Marks</label><input type="number" value="{{ $v('total_marks', $editing ? $test->total_marks : 0) }}" id="pv_marks" readonly title="Auto-calculated from the questions you add" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-500"></div>
-                    <div><label class="block text-sm font-medium mb-1">Passing Marks</label><input name="passing_marks" id="pv_pass" type="number" min="0" value="{{ $v('passing_marks', $S('default_passing', 0)) }}" oninput="syncPreview()" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-brand outline-none"></div>
                     <div><label class="block text-sm font-medium mb-1">Max Attempts</label><input name="max_attempts" id="pv_att" type="number" min="1" value="{{ $v('max_attempts', $S('default_max_attempts', 1)) }}" oninput="syncPreview()" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-brand outline-none"></div>
+                </div>
+
+                {{-- Passing Criteria: % of total (auto) or fixed marks --}}
+                <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="font-bold text-slate-800 text-sm">Passing Criteria <span class="text-rose-500">*</span></div>
+                            <div class="text-xs text-slate-400">Kitne marks pe candidate <b>PASS</b> hoga — % of total (recommended) ya fixed marks.</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="passing_mode" id="passing_mode" value="{{ $passMode }}">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 text-sm shrink-0" id="passModeToggle">
+                            <button type="button" data-mode="percent" onclick="setPassMode('percent')" class="px-3 py-1.5 rounded-md font-medium text-slate-500 transition">% of total</button>
+                            <button type="button" data-mode="marks" onclick="setPassMode('marks')" class="px-3 py-1.5 rounded-md font-medium text-slate-500 transition">Fixed marks</button>
+                        </div>
+                        <div id="passPercentWrap" class="relative w-28">
+                            <input name="passing_percent" id="passing_percent" type="number" min="0" max="100" value="{{ $passPercentVal }}" oninput="syncPass()" class="w-full rounded-lg border border-slate-300 pl-3 pr-8 py-2 focus:ring-2 focus:ring-brand outline-none">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+                        </div>
+                        <div id="passMarksWrap" class="flex items-center gap-2">
+                            <input name="passing_marks" id="passing_marks" type="number" min="0" value="{{ $passMarks }}" oninput="syncPass()" class="w-24 rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-brand outline-none">
+                            <span class="text-xs text-slate-400">marks</span>
+                        </div>
+                    </div>
+                    <div class="mt-2" id="passHint"></div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -253,11 +286,49 @@
 @push('scripts')
 <script>
     const $ = id => document.getElementById(id);
+    // ---- Passing criteria (% of total, or fixed marks) ----
+    function passTotal(){ return parseInt($('pv_marks').value) || 0; }
+    function effPassMarks(){
+        const mode = $('passing_mode').value, total = passTotal();
+        if (mode === 'percent') {
+            const p = Math.min(100, Math.max(0, parseInt($('passing_percent').value) || 0));
+            return Math.ceil(p / 100 * total);
+        }
+        return parseInt($('passing_marks').value) || 0;
+    }
+    function setPassMode(m){
+        $('passing_mode').value = m;
+        $('passPercentWrap').classList.toggle('hidden', m !== 'percent');
+        $('passMarksWrap').classList.toggle('hidden', m !== 'marks');
+        document.querySelectorAll('#passModeToggle [data-mode]').forEach(b => {
+            const on = b.dataset.mode === m;
+            b.classList.toggle('bg-brand', on);
+            b.classList.toggle('text-white', on);
+            b.classList.toggle('text-slate-500', !on);
+        });
+        syncPass();
+    }
+    function syncPass(){
+        const total = passTotal(), pass = effPassMarks(), mode = $('passing_mode').value;
+        const pct = total > 0 ? Math.round(pass / total * 100) : (parseInt($('passing_percent').value) || 0);
+        const hint = $('passHint');
+        if (mode === 'percent' && total === 0) {
+            hint.innerHTML = 'Pass = <b>' + (parseInt($('passing_percent').value) || 0) + '%</b> of total — auto-applied once you add questions.';
+            hint.className = 'text-sm text-slate-500';
+        } else if (pass > total && total > 0) {
+            hint.innerHTML = '⚠ Pass mark (' + pass + ') is more than total (' + total + '). Lower it.';
+            hint.className = 'text-sm text-rose-600 font-medium';
+        } else {
+            hint.innerHTML = 'Candidates need <b>' + pass + '</b> / ' + total + ' marks to pass' + (total > 0 ? ' (' + pct + '%)' : '') + '.';
+            hint.className = 'text-sm text-slate-600';
+        }
+        syncPreview();
+    }
     function syncPreview() {
         const t = document.querySelector('[name=title]').value || 'Untitled Test';
         $('pv_title').textContent = t;
         $('pv_initials').textContent = (t.replace(/[^A-Za-z0-9]/g,'').slice(0,2) || 'EX').toUpperCase();
-        const dur = $('pv_dur').value || 0, pass = $('pv_pass').value || 0, att = $('pv_att').value || 1;
+        const dur = $('pv_dur').value || 0, att = $('pv_att').value || 1, pass = effPassMarks();
         $('pv_dur2').textContent = dur; $('pv_pass2').textContent = pass; $('pv_att2').textContent = att;
         $('pv_att3').textContent = att; $('pv_pass3').textContent = pass;
         const d = $('descBox').value.trim(); $('pv_desc').textContent = d || 'No description added yet.';
@@ -269,7 +340,7 @@
     function prefixDesc(p){ const b=$('descBox'); const s=b.selectionStart; b.value=b.value.slice(0,s)+'\n'+p+b.value.slice(s); descCount(); }
     // password toggle
     function togglePw(cb){ $('pwField').classList.toggle('hidden', !cb.checked); if(!cb.checked) $('pwField').value=''; }
-    descCount(); syncPreview();
+    descCount(); setPassMode($('passing_mode').value);
 </script>
 @endpush
 </div>

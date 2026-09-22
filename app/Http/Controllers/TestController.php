@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class TestController extends Controller
 {
@@ -26,7 +27,14 @@ class TestController extends Controller
     {
         $total = TestQuestion::with('question:id,marks')->where('test_id', $testId)->get()
             ->sum(fn ($tq) => $tq->marks_override ?? $tq->question->marks);
-        Test::where('id', $testId)->update(['total_marks' => $total]);
+        $test = Test::find($testId);
+        $update = ['total_marks' => $total];
+        // Percentage-based pass mark: keep passing_marks in sync with the live total.
+        // Guarded so the app never breaks if the passing_percent column isn't migrated yet.
+        if ($test && Schema::hasColumn('tests', 'passing_percent') && $test->passing_percent !== null) {
+            $update['passing_marks'] = (int) ceil($test->passing_percent / 100 * $total);
+        }
+        Test::where('id', $testId)->update($update);
         return $total;
     }
 
@@ -40,7 +48,9 @@ class TestController extends Controller
             'audience' => 'nullable|string|max:120',
             'duration_minutes' => 'required|integer|min:1',
             'total_marks' => 'nullable|integer|min:0',
-            'passing_marks' => 'required|integer|min:0',
+            'passing_mode' => 'nullable|in:percent,marks',
+            'passing_marks' => 'nullable|integer|min:0',
+            'passing_percent' => 'nullable|integer|min:0|max:100',
             'negative_marks' => 'nullable|numeric|min:0|max:100',
             'max_attempts' => 'required|integer|min:1',
             'max_candidates' => 'required|integer|min:1|max:100000',
@@ -56,6 +66,31 @@ class TestController extends Controller
         ]);
         // total_marks is auto-recomputed from questions; keep any provided as a hint.
         unset($d['total_marks']);
+
+        // Passing criteria: either a % of total (auto-derived, survives total changes)
+        // or a fixed number of marks. passing_mode only drives interpretation; it is not stored.
+        $hasPercentCol = Schema::hasColumn('tests', 'passing_percent');
+        $mode = $d['passing_mode'] ?? (($d['passing_percent'] ?? null) !== null ? 'percent' : 'marks');
+        unset($d['passing_mode']);
+        $pct = max(0, min(100, (int) ($d['passing_percent'] ?? 40)));
+        $hintTotal = (int) $request->input('total_marks', 0);
+        if ($mode === 'percent') {
+            // passing_marks is derived from the live total in recomputeTotal(); seed a provisional value.
+            $d['passing_marks'] = (int) ceil($pct / 100 * $hintTotal);
+            if ($hasPercentCol) {
+                $d['passing_percent'] = $pct;
+            } else {
+                unset($d['passing_percent']);
+            }
+        } else {
+            $d['passing_marks'] = (int) ($d['passing_marks'] ?? 0);
+            if ($hasPercentCol) {
+                $d['passing_percent'] = null;
+            } else {
+                unset($d['passing_percent']);
+            }
+        }
+
         // Keep an existing password when the field is left blank (don't wipe it).
         if (empty($d['access_password'])) {
             unset($d['access_password']);
@@ -139,6 +174,8 @@ class TestController extends Controller
         // Keep an existing code so a shared link survives a toggle; mint on first enable.
         $accessCode = $b['public_access'] ? ($test->access_code ?? $this->makeAccessCode()) : $test->access_code;
         $test->update(array_merge($d, $b, ['access_code' => $accessCode]));
+        // Re-sync a percentage pass mark against the current question total.
+        $this->recomputeTotal($test->id);
         Audit::log('test.update', ['entity' => 'Test', 'entity_id' => $test->id]);
         return redirect()->route('tests.show', $test)->with('status', 'Test updated.');
     }
