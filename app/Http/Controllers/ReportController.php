@@ -80,7 +80,7 @@ class ReportController extends Controller
 
         $sections = $test->usesSections() ? $test->sections()->get() : collect();
 
-        $headers = ['Candidate', 'Email', 'Student ID', 'Batch', 'Status', 'Auto Score', 'Manual Score', 'Total Score', 'Max Score', 'Result', 'Reason', 'Terminated', 'Submitted At', 'Violations'];
+        $headers = ['Candidate', 'Email', 'Student ID', 'Batch', 'Status', 'Objective Score', 'Written Score', 'Total Score', 'Out Of', 'Result', 'Reason', 'Malpractice', 'Submitted At', 'Violations'];
         foreach ($sections as $s) {
             $headers[] = $s->title . ' (score / ' . $s->maxMarks() . ')';
             $headers[] = $s->title . ' result';
@@ -112,6 +112,10 @@ class ReportController extends Controller
             $rows[] = $row;
         }
 
-        return Spreadsheet::download($filename, $headers, $rows);
+        $sub = $test->usesSections()
+            ? $test->sections()->count() . ' sections · overall pass ' . $test->passing_marks . ' / ' . $test->total_marks
+            : 'Pass mark ' . $test->passing_marks . ' / ' . $test->total_marks;
+
+        return Spreadsheet::download($filename, $headers, $rows, $test->title . ' — Results', $sub);
     }
 }
