@@ -100,7 +100,7 @@ class ReportController extends Controller
                 $a->passed === null ? '' : ($a->passed ? 'PASS' : 'FAIL'),
                 $a->result_reason,
                 $a->terminated ? 'YES (malpractice)' : 'No',
-                $a->submitted_at?->toDateTimeString(),
+                $a->submitted_at?->ist()?->toDateTimeString(),
                 $a->violations,
             ];
             $bySection = $a->sectionResults->keyBy('section_id');

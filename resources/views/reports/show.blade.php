@@ -89,7 +89,7 @@
                             @else <span class="text-slate-300">—</span> @endif
                         </td>
                     @endforeach
-                    <td class="px-4 py-2 text-slate-500">{{ $a->submitted_at?->format('d M, H:i') ?? '—' }}</td>
+                    <td class="px-4 py-2 text-slate-500">{{ $a->submitted_at?->ist()->format('d M, H:i') ?? '—' }}</td>
                     <td class="px-4 py-2 text-right"><a href="{{ route('reports.attempt', [$test, $a]) }}" class="text-brand text-xs font-medium hover:underline whitespace-nowrap">View →</a></td>
                 </tr>
             @empty

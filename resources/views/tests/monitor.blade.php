@@ -98,8 +98,8 @@
                     </td>
                     <td class="px-4 py-3 text-slate-500 text-xs">
                         @if ($a)
-                            <div>Start: {{ $a->started_at?->format('d M, H:i') }}</div>
-                            @if ($a->submitted_at)<div>End: {{ $a->submitted_at?->format('d M, H:i') }}</div>@endif
+                            <div>Start: {{ $a->started_at?->ist()->format('d M, H:i') }}</div>
+                            @if ($a->submitted_at)<div>End: {{ $a->submitted_at?->ist()->format('d M, H:i') }}</div>@endif
                         @else — @endif
                     </td>
                 </tr>

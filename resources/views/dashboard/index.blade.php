@@ -117,7 +117,7 @@
                                 <td class="py-3 text-slate-600">{{ $a->test?->title ?? '—' }}</td>
                                 <td class="py-3"><x-status :value="$a->status" /></td>
                                 <td class="py-3 font-medium">{{ $a->total_score !== null ? rtrim(rtrim(number_format($a->total_score,1),'0'),'.').' / '.($a->max_score ?? '—') : '—' }}</td>
-                                <td class="py-3 text-slate-500"><span class="block">{{ $a->started_at?->diffForHumans() }}</span><span class="block text-xs text-slate-400">{{ $a->started_at?->format('d M Y, h:i A') }}</span></td>
+                                <td class="py-3 text-slate-500"><span class="block">{{ $a->started_at?->diffForHumans() }}</span><span class="block text-xs text-slate-400">{{ $a->started_at?->ist()->format('d M Y, h:i A') }}</span></td>
                             </tr>
                         @empty
                             <tr><td colspan="6" class="py-8 text-center text-slate-400">No attempts yet.</td></tr>

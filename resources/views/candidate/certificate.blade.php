@@ -24,7 +24,7 @@
         <p class="text-xl font-medium my-3">{{ $attempt->test->title }}</p>
         <p class="text-slate-600">with a score of <b>{{ rtrim(rtrim(number_format($attempt->total_score,2),'0'),'.') }} / {{ $attempt->max_score ?? $attempt->test->total_marks }}</b></p>
         <div class="mt-10 flex justify-between text-sm text-slate-500">
-            <div>{{ optional($attempt->submitted_at)->format('d F Y') }}</div>
+            <div>{{ $attempt->submitted_at?->ist()->format('d F Y') }}</div>
             <div class="border-t border-slate-300 pt-1">Authorised Signature</div>
         </div>
     </div>

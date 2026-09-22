@@ -117,7 +117,7 @@
             </div>
         @endif
 
-        <div class="text-xs text-slate-400 mt-6 text-center">Submitted on {{ optional($attempt->submitted_at)->format('d M Y, h:i A') }}</div>
+        <div class="text-xs text-slate-400 mt-6 text-center">Submitted on {{ $attempt->submitted_at?->ist()->format('d M Y, h:i A') }}</div>
         <div class="text-center"><a href="{{ route('candidate.home') }}" class="inline-block mt-4 text-brand font-medium hover:underline">← Back to my tests</a></div>
     </div>
     </div>

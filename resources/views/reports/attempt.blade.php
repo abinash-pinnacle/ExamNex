@@ -15,7 +15,7 @@
         <div class="text-sm text-slate-500">{{ $attempt->candidate?->student_id ? 'ID '.$attempt->candidate->student_id.' · ' : '' }}{{ $attempt->candidate?->email }} · <x-status :value="$attempt->status" /></div>
     </div>
     <div class="text-right text-xs text-slate-400 shrink-0">
-        Submitted {{ $attempt->submitted_at?->format('d M Y, H:i') ?? '—' }}<br>
+        Submitted {{ $attempt->submitted_at?->ist()->format('d M Y, H:i') ?? '—' }}<br>
         Violations: {{ $attempt->violations }}{{ $attempt->terminated ? ' · TERMINATED' : '' }}
     </div>
 </div>
