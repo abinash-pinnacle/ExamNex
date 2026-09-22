@@ -28,7 +28,7 @@
 
     {{-- ================= HEADER ================= --}}
     <header class="bg-white/90 backdrop-blur border-b border-slate-100 shrink-0">
-        <div class="max-w-[1600px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between gap-4">
+        <div class="max-w-[1600px] mx-auto px-5 sm:px-8 h-20 lg:h-16 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow">
                     <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
@@ -92,9 +92,9 @@
 
         {{-- ---- CENTER: registration form ---- --}}
         <div class="flex-1 min-h-0 overflow-y-auto">
-          <div class="min-h-full flex items-center justify-center p-4 sm:p-8">
-            <div class="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8">
-                <div class="flex items-start gap-3 pb-5 border-b border-slate-100">
+          <div class="min-h-full flex items-center justify-center p-4 sm:p-8 lg:py-3">
+            <div class="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8 lg:p-6">
+                <div class="flex items-start gap-3 pb-5 lg:pb-3 border-b border-slate-100">
                     <span class="w-12 h-12 rounded-2xl bg-blue-50 text-brand flex items-center justify-center shrink-0">
                         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 12h6M9 16h6M6 3h9l5 5v13H6z"/></svg>
                     </span>
@@ -108,7 +108,7 @@
                     </div>
                 </div>
 
-                <p class="text-sm text-slate-500 mt-4 mb-5">Enter your details to begin the assessment.</p>
+                <p class="text-sm text-slate-500 mt-4 mb-5 lg:mt-2 lg:mb-3">Enter your details to begin the assessment.</p>
 
                 @if ($errors->any())
                     <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
@@ -123,41 +123,41 @@
                     ];
                 @endphp
 
-                <form method="POST" action="{{ route('public.test', $code) }}" class="space-y-4">
+                <form method="POST" action="{{ route('public.test', $code) }}" class="space-y-4 lg:space-y-2.5">
                     @csrf
                     @foreach ($fields as [$name,$label,$ph,$req,$type,$icon])
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">{{ $label }} @if($req)<span class="text-rose-500">*</span>@endif</label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5 lg:mb-1">{{ $label }} @if($req)<span class="text-rose-500">*</span>@endif</label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="{{ $icon }}"/></svg>
                                 </span>
                                 <input name="{{ $name }}" value="{{ old($name) }}" placeholder="{{ $ph }}" @if($req)required @endif
-                                       class="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 py-3 text-sm focus:bg-white focus:border-brand focus:ring-2 focus:ring-brand/30 outline-none transition">
+                                       class="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 py-3 lg:py-2 text-sm focus:bg-white focus:border-brand focus:ring-2 focus:ring-brand/30 outline-none transition">
                             </div>
                         </div>
                     @endforeach
 
                     @if ($test->access_password)
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Test password <span class="text-rose-500">*</span></label>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5 lg:mb-1">Test password <span class="text-rose-500">*</span></label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center">
                                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
                                 </span>
                                 <input name="access_password" type="password" required placeholder="Enter the password shared with you"
-                                       class="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 py-3 text-sm focus:bg-white focus:border-brand focus:ring-2 focus:ring-brand/30 outline-none transition">
+                                       class="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-12 pr-4 py-3 lg:py-2 text-sm focus:bg-white focus:border-brand focus:ring-2 focus:ring-brand/30 outline-none transition">
                             </div>
                         </div>
                     @endif
 
-                    <button class="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition"
+                    <button class="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3.5 lg:py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition"
                             style="box-shadow:0 12px 22px -10px rgb(var(--brand-rgb)/.6)">
                         <span>&rarr;</span> Register &amp; Start <span>&rarr;</span>
                     </button>
                 </form>
 
-                <div class="mt-4 flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+                <div class="mt-4 lg:mt-2.5 flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-100 px-4 py-2.5 lg:py-2 text-xs text-slate-500">
                     <svg class="w-4 h-4 text-brand shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
                     Your information is secure and will only be used for this assessment.
                 </div>
