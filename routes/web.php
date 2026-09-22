@@ -68,6 +68,7 @@ Route::middleware(['auth', 'role:ADMIN,TEST_CREATOR'])->group(function () {
     Route::get('/tests/{test}/edit', [TestController::class, 'edit'])->name('tests.edit');
     Route::put('/tests/{test}', [TestController::class, 'update'])->name('tests.update');
     Route::post('/tests/{test}/questions', [TestController::class, 'addQuestions'])->name('tests.addQuestions');
+    Route::post('/tests/{test}/sections/{section}/questions/auto', [TestController::class, 'autoFillSection'])->name('tests.autoFillSection');
     Route::delete('/tests/{test}/questions/{question}', [TestController::class, 'removeQuestion'])->name('tests.removeQuestion');
     Route::post('/tests/{test}/assign', [TestController::class, 'assign'])->name('tests.assign');
     Route::post('/tests/{test}/publish', [TestController::class, 'publish'])->name('tests.publish');
@@ -82,6 +83,7 @@ Route::middleware(['auth', 'role:ADMIN,TEST_CREATOR'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{test}', [ReportController::class, 'show'])->name('reports.show');
     Route::get('/reports/{test}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{test}/attempt/{attempt}', [ReportController::class, 'attempt'])->name('reports.attempt');
 
     // Candidates (students)
     Route::get('/candidates', [UserController::class, 'candidates'])->name('candidates.index');
@@ -110,6 +112,7 @@ Route::middleware(['auth', 'role:CANDIDATE'])->group(function () {
     Route::post('/candidate/test/{test}/start', [AttemptController::class, 'start'])->name('attempt.start');
     Route::get('/candidate/attempt/{attempt}', [AttemptController::class, 'run'])->name('attempt.run');
     Route::post('/candidate/attempt/{attempt}/save', [AttemptController::class, 'save'])->name('attempt.save');
+    Route::post('/candidate/attempt/{attempt}/section', [AttemptController::class, 'section'])->name('attempt.section');
     Route::post('/candidate/attempt/{attempt}/event', [AttemptController::class, 'event'])->name('attempt.event');
     Route::post('/candidate/attempt/{attempt}/submit', [AttemptController::class, 'submit'])->name('attempt.submit');
     Route::get('/candidate/attempt/{attempt}/result', [AttemptController::class, 'result'])->name('attempt.result');

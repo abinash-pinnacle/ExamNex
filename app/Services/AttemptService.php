@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\DB;
  *  - Question/option order is frozen on start (question_order) for consistent resume.
  *  - One attempt metered on start; resume never re-meters and is never blocked.
  *  - Objective auto-graded on submit; descriptive queued; final score when all graded.
+ *
+ * Section-wise tests (Test::usesSections()) delegate paper building, timers and
+ * scoring to SectionService; tests without sections keep the original behaviour.
  */
 class AttemptService
 {
@@ -68,6 +71,28 @@ class AttemptService
         $prior = Attempt::where('test_id', $test->id)->where('candidate_id', $candidate->id)->count();
         if ($prior >= $test->max_attempts) {
             return ['ok' => false, 'error' => 'You have used all your attempts.'];
+        }
+
+        // ---- Section-wise paper: pick question_count per section, randomised within it ----
+        if ($test->usesSections()) {
+            $paper = SectionService::buildPaper($test);
+            if (empty($paper['questions'])) {
+                return ['ok' => false, 'error' => 'This test has no questions.'];
+            }
+            $deadline = $now->copy()->addMinutes(SectionService::durationMinutes($test));
+            $attempt = Attempt::create([
+                'test_id' => $test->id,
+                'candidate_id' => $candidate->id,
+                'status' => 'IN_PROGRESS',
+                'started_at' => $now,
+                'deadline_at' => $deadline,
+                'system_check_passed' => $systemCheckPassed,
+                'max_score' => SectionService::totalMarks($test),
+                'question_order' => $paper,
+                'section_state' => SectionService::initialState($paper, $now),
+            ]);
+            Audit::log('attempt.start', ['entity' => 'Attempt', 'entity_id' => $attempt->id]);
+            return ['ok' => true, 'attemptId' => $attempt->id];
         }
 
         $tqs = TestQuestion::with('question.options')
@@ -122,6 +147,17 @@ class AttemptService
         if ($attempt->deadline_at->getTimestamp() * 1000 + 5000 < now()->getTimestamp() * 1000) {
             return ['ok' => false, 'error' => 'Time expired'];
         }
+        // Section tests: a locked/expired section can no longer be written to.
+        if (! empty($attempt->question_order['sections'])) {
+            $test = $attempt->test;
+            if ($test && $test->timer_mode === 'SECTION') {
+                SectionService::syncTimers($attempt, $test);
+                $attempt->refresh();
+            }
+            if ($test && ! SectionService::questionWritable($attempt, $test, (int) $a['question_id'])) {
+                return ['ok' => false, 'error' => 'This section is locked'];
+            }
+        }
 
         AttemptAnswer::updateOrCreate(
             ['attempt_id' => $attemptId, 'question_id' => $a['question_id']],
@@ -136,6 +172,31 @@ class AttemptService
         $savedAt = now();
         $attempt->update(['last_saved_at' => $savedAt]);
         return ['ok' => true, 'savedAt' => $savedAt->toIso8601String()];
+    }
+
+    /**
+     * Candidate moves to the next section (section tests only).
+     * @return array{ok: bool, ended: bool}  ended = no more sections, attempt was submitted
+     */
+    public static function advanceSection(int $attemptId, int $candidateId): array
+    {
+        $attempt = Attempt::where('id', $attemptId)->where('candidate_id', $candidateId)->where('status', 'IN_PROGRESS')->first();
+        if (! $attempt || empty($attempt->question_order['sections'])) {
+            return ['ok' => false, 'ended' => false];
+        }
+        $test = $attempt->test;
+        if ($test->timer_mode === 'SECTION' && SectionService::syncTimers($attempt, $test) === null) {
+            self::submit($attemptId, $candidateId, true);
+            return ['ok' => true, 'ended' => true];
+        }
+        $attempt->refresh();
+        $more = SectionService::advance($attempt, $test);
+        Audit::log('attempt.sectionNext', ['entity' => 'Attempt', 'entity_id' => $attemptId]);
+        if (! $more) {
+            self::submit($attemptId, $candidateId, false);
+            return ['ok' => true, 'ended' => true];
+        }
+        return ['ok' => true, 'ended' => false];
     }
 
     /**
@@ -168,6 +229,7 @@ class AttemptService
                     'terminated' => true,
                     'passed' => false,
                     'status' => 'EVALUATED',
+                    'result_reason' => 'Terminated for malpractice (left the exam window).',
                 ]);
                 Audit::log('attempt.terminated', ['entity' => 'Attempt', 'entity_id' => $attemptId, 'detail' => ['server' => true, 'violations' => $attempt->violations]]);
                 return ['ok' => true, 'terminated' => true];
@@ -185,6 +247,7 @@ class AttemptService
                 'terminated' => true,
                 'passed' => false,
                 'status' => 'EVALUATED',
+                'result_reason' => 'Terminated for malpractice (left the exam window).',
             ]);
         }
         if ($res['ok']) {
@@ -210,6 +273,12 @@ class AttemptService
             }
 
             $test = Test::findOrFail($attempt->test_id);
+            $sections = $attempt->question_order['sections'] ?? [];
+
+            if ($sections) {
+                return self::finalizeSectioned($attempt, $test, $sections, $status);
+            }
+
             $tqs = TestQuestion::with('question.options')->where('test_id', $attempt->test_id)->get();
             $answers = AttemptAnswer::where('attempt_id', $attemptId)->get()->keyBy('question_id');
 
@@ -257,10 +326,74 @@ class AttemptService
                 'manual_score' => $fullyGraded ? 0 : null,
                 'total_score' => $fullyGraded ? $autoScore : null,
                 'passed' => $fullyGraded ? ($autoScore >= $test->passing_marks) : null,
+                'result_reason' => $fullyGraded && $autoScore < $test->passing_marks ? 'Qualifying marks not achieved.' : null,
             ]);
 
             return ['ok' => true, 'attemptId' => $attemptId];
         });
+    }
+
+    /**
+     * Section-wise finalisation: every question is graded with ITS SECTION's
+     * marks-per-question and negative marking (frozen on the attempt), then the
+     * section results and the combined PASS/FAIL are computed.
+     */
+    private static function finalizeSectioned(Attempt $attempt, Test $test, array $sections, string $status): array
+    {
+        $qids = [];
+        $params = [];   // question id -> [mpq, neg]
+        foreach ($sections as $sec) {
+            foreach ($sec['qids'] as $qid) {
+                $qids[] = (int) $qid;
+                $params[(int) $qid] = [(int) $sec['mpq'], (float) $sec['neg']];
+            }
+        }
+        $questions = \App\Models\Question::with('options')->whereIn('id', $qids)->get()->keyBy('id');
+        $answers = AttemptAnswer::where('attempt_id', $attempt->id)->get()->keyBy('question_id');
+
+        $autoScore = 0.0;
+        $pendingDescriptive = false;
+        foreach ($qids as $qid) {
+            $q = $questions->get($qid);
+            if (! $q) {
+                continue;
+            }
+            $ans = $answers->get($qid);
+            [$mpq, $neg] = $params[$qid];
+
+            if ($q->type === 'DESCRIPTIVE') {
+                $answered = $ans && $ans->text_answer !== null && trim($ans->text_answer) !== '';
+                if ($answered) {
+                    $pendingDescriptive = true;
+                } elseif ($ans) {
+                    $ans->update(['awarded_marks' => 0, 'is_correct' => false, 'graded' => true]);
+                } else {
+                    AttemptAnswer::create(['attempt_id' => $attempt->id, 'question_id' => $qid, 'awarded_marks' => 0, 'graded' => true]);
+                }
+                continue;
+            }
+
+            $g = Evaluation::grade($q, $ans, $neg > 0, $mpq, $neg);
+            $autoScore += $g['awardedMarks'] ?? 0;
+            if ($ans) {
+                $ans->update(['is_correct' => $g['isCorrect'], 'awarded_marks' => $g['awardedMarks'], 'graded' => true]);
+            }
+        }
+
+        $res = SectionService::score($attempt, $test);
+        $fullyGraded = ! $res['pending'];
+        $attempt->update([
+            'status' => $fullyGraded ? 'EVALUATED' : $status,
+            'submitted_at' => now(),
+            'auto_score' => $autoScore,
+            'manual_score' => $fullyGraded ? 0 : null,
+            'total_score' => $fullyGraded ? $res['total'] : null,
+            'max_score' => $res['max'],
+            'passed' => $res['passed'],
+            'result_reason' => $res['reason'],
+        ]);
+
+        return ['ok' => true, 'attemptId' => $attempt->id];
     }
 
     /** Faculty/admin manual grade for a descriptive answer. */
@@ -282,6 +415,11 @@ class AttemptService
             $descIds = TestQuestion::where('test_id', $attempt->test_id)
                 ->whereHas('question', fn ($q) => $q->where('type', 'DESCRIPTIVE'))
                 ->pluck('question_id')->all();
+            // Section tests: only the questions actually on this candidate's paper count.
+            if (! empty($attempt->question_order['sections'])) {
+                $onPaper = array_map('intval', $attempt->question_order['questions'] ?? []);
+                $descIds = array_values(array_intersect(array_map('intval', $descIds), $onPaper));
+            }
             $descAnswers = AttemptAnswer::where('attempt_id', $attempt->id)
                 ->whereIn('question_id', $descIds)->get()->keyBy('question_id');
 
@@ -289,13 +427,26 @@ class AttemptService
 
             if ($allGraded) {
                 $manual = $descAnswers->sum(fn ($a) => $a->awarded_marks ?? 0);
-                $total = ($attempt->auto_score ?? 0) + $manual;
-                $attempt->update([
-                    'manual_score' => $manual,
-                    'total_score' => $total,
-                    'passed' => $total >= $test->passing_marks,
-                    'status' => 'EVALUATED',
-                ]);
+                if (! empty($attempt->question_order['sections'])) {
+                    $res = SectionService::score($attempt, $test);
+                    $attempt->update([
+                        'manual_score' => $manual,
+                        'total_score' => $res['total'],
+                        'max_score' => $res['max'],
+                        'passed' => $res['passed'],
+                        'result_reason' => $res['reason'],
+                        'status' => 'EVALUATED',
+                    ]);
+                } else {
+                    $total = ($attempt->auto_score ?? 0) + $manual;
+                    $attempt->update([
+                        'manual_score' => $manual,
+                        'total_score' => $total,
+                        'passed' => $total >= $test->passing_marks,
+                        'result_reason' => $total >= $test->passing_marks ? null : 'Qualifying marks not achieved.',
+                        'status' => 'EVALUATED',
+                    ]);
+                }
             }
         });
         Audit::log('answer.grade', ['entity' => 'AttemptAnswer', 'entity_id' => $answerId]);

@@ -6,6 +6,7 @@ use App\Models\Attempt;
 use App\Models\Question;
 use App\Models\Test;
 use App\Services\AttemptService;
+use App\Services\SectionService;
 use Illuminate\Http\Request;
 
 class AttemptController extends Controller
@@ -40,11 +41,42 @@ class AttemptController extends Controller
         $answers = $attempt->answers()->get()->keyBy('question_id');
         $remainingMs = $attempt->deadline_at->getTimestamp() * 1000 - now()->getTimestamp() * 1000;
 
+        // ---- Section-wise exam: current section, access map, per-section clock ----
+        $sections = null;
+        $currentSection = 0;
+        $sectionRemainingMs = null;
+        if (! empty($attempt->question_order['sections'])) {
+            $sync = SectionService::syncTimers($attempt, $test);
+            if ($sync === null) {
+                AttemptService::submit($attempt->id, $request->user()->id, true);
+                return redirect()->route('attempt.result', $attempt->id)->withErrors(['exam' => 'Section time is over; your attempt was submitted.']);
+            }
+            $attempt->refresh();
+            $currentSection = $sync['current'];
+            $sectionRemainingMs = $sync['remainingMs'];
+            $access = SectionService::accessibleSections($attempt, $test);
+            $locked = array_map('intval', $attempt->section_state['locked'] ?? []);
+            $sections = [];
+            foreach ($attempt->question_order['sections'] as $i => $sec) {
+                $sections[] = [
+                    'id' => (int) $sec['id'],
+                    'title' => $sec['title'],
+                    'qids' => array_map('intval', $sec['qids']),
+                    'mpq' => (int) $sec['mpq'],
+                    'qual' => (float) $sec['qual'],
+                    'neg' => (float) $sec['neg'],
+                    'dur' => (int) ($sec['dur'] ?? 0),
+                    'accessible' => (bool) ($access[$i] ?? false),
+                    'locked' => in_array((int) $sec['id'], $locked, true),
+                ];
+            }
+        }
+
         // Never cache the live exam: after submit, pressing Back must hit the
         // server again (status is no longer IN_PROGRESS -> redirect to result)
         // instead of restoring the old exam from the browser/bfcache.
         return response()
-            ->view('candidate.run', compact('attempt', 'test', 'paper', 'answers', 'remainingMs'))
+            ->view('candidate.run', compact('attempt', 'test', 'paper', 'answers', 'remainingMs', 'sections', 'currentSection', 'sectionRemainingMs'))
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
@@ -63,6 +95,20 @@ class AttemptController extends Controller
         ]);
         $res = AttemptService::saveAnswer($attempt->id, $request->user()->id, $data);
         return response()->json($res);
+    }
+
+    /** Section tests: candidate ends the current section and opens the next one. */
+    public function section(Request $request, Attempt $attempt)
+    {
+        abort_unless($attempt->candidate_id === $request->user()->id, 403);
+        if ($attempt->status !== 'IN_PROGRESS') {
+            return redirect()->route('attempt.result', $attempt->id);
+        }
+        $res = AttemptService::advanceSection($attempt->id, $request->user()->id);
+        if ($res['ended']) {
+            return redirect()->route('attempt.result', $attempt->id)->with('status', 'Attempt submitted.');
+        }
+        return redirect()->route('attempt.run', $attempt->id);
     }
 
     public function event(Request $request, Attempt $attempt)
@@ -88,18 +134,19 @@ class AttemptController extends Controller
     public function result(Request $request, Attempt $attempt)
     {
         abort_unless($attempt->candidate_id === $request->user()->id, 403);
-        $attempt->load('test');
+        $attempt->load(['test', 'sectionResults']);
         $test = $attempt->test;
 
-        $showScore = $attempt->status === 'EVALUATED' && $test->result_visibility !== 'HIDDEN';
+        $showScore = $attempt->status === 'EVALUATED' && $test->result_visibility === 'IMMEDIATE';
         $paper = null;
-        if ($showScore && $test->result_visibility === 'IMMEDIATE') {
+        if ($showScore) {
             $paper = $this->buildPaper($attempt);
             $attempt->load('answers');
         }
         $answers = $attempt->answers()->get()->keyBy('question_id');
+        $sectionResults = $attempt->sectionResults;
 
-        return view('candidate.result', compact('attempt', 'test', 'showScore', 'paper', 'answers'));
+        return view('candidate.result', compact('attempt', 'test', 'showScore', 'paper', 'answers', 'sectionResults'));
     }
 
     public function certificate(Request $request, Attempt $attempt)

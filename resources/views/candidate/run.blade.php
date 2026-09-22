@@ -15,6 +15,7 @@
         body.no-copy{ -webkit-user-select:none; -moz-user-select:none; user-select:none; }
         body.no-copy input, body.no-copy textarea{ -webkit-user-select:text; -moz-user-select:text; user-select:text; }
         .blurred{ filter: blur(10px); }
+        .sec-tabs::-webkit-scrollbar{ height:4px; } .sec-tabs::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:4px; }
     </style>
 </head>
 @php
@@ -23,6 +24,31 @@
     $conductedSub = \App\Models\Setting::get('conducted_by_sub');
     $subtitle = $test->description ?: ($test->subject ?: 'Online Assessment');
     $tag1 = $test->category ?: 'Assessment';
+
+    // ---- Section-wise paper helpers (null/empty for plain tests) ----
+    $hasSections = ! empty($sections);
+    $qIndex = [];                       // question id -> global index in $paper
+    foreach ($paper as $i => $item) { $qIndex[$item['question']->id] = $i; }
+    $qSec = []; $qPos = [];             // question id -> section index / position within section
+    if ($hasSections) {
+        foreach ($sections as $si => $s) {
+            foreach ($s['qids'] as $pi => $qid) { $qSec[$qid] = $si; $qPos[$qid] = $pi; }
+        }
+    }
+    $startIndex = 0;
+    if ($hasSections) {
+        $cs = $sections[$currentSection] ?? $sections[0];
+        $startIndex = $qIndex[$cs['qids'][0] ?? null] ?? 0;
+    }
+    $secTimer = $hasSections && $test->timer_mode === 'SECTION';
+    $serverNav = $hasSections && ($secTimer || $test->section_navigation === 'SEQUENTIAL');
+    $locksOnAdvance = $hasSections && ($secTimer || ($test->section_navigation === 'SEQUENTIAL' && ! $test->allow_section_return));
+    // Pre-computed JSON for the client (Blade's @json() cannot take nested closures reliably).
+    $sectionsJson = json_encode($hasSections ? array_map(fn ($s) => [
+        'id' => $s['id'], 'title' => $s['title'], 'count' => count($s['qids']),
+        'accessible' => $s['accessible'], 'locked' => $s['locked'],
+    ], $sections) : []);
+    $qsecJson = json_encode($hasSections ? array_map(fn ($p) => $qSec[$p['question']->id] ?? 0, $paper) : []);
 @endphp
 <body class="h-full overflow-hidden bg-gradient-to-b from-[#eaf1fb] to-[#f4f8fd] text-slate-800 {{ $test->detect_copy ? 'no-copy' : '' }}">
 <div class="app-shell flex flex-col">
@@ -30,12 +56,12 @@
     {{-- ===== Header ===== --}}
     <header class="bg-white border-b border-slate-100 shrink-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
-            <div class="flex items-center gap-3 shrink-0">
+            <div class="flex items-center gap-3 shrink-0 min-w-0">
                 <x-brand-logo size="w-11 h-11" icon="w-6 h-6" />
-                <div class="leading-tight">
+                <div class="leading-tight min-w-0">
                     <div class="text-[11px] text-slate-400">Conducted by</div>
-                    <div class="text-base font-extrabold text-slate-900 leading-none">{{ $conductedBy }}</div>
-                    <div class="text-[11px] text-slate-400 mt-0.5">{{ $conductedSub }}</div>
+                    <div class="text-base font-extrabold text-slate-900 leading-none truncate">{{ $conductedBy }}</div>
+                    <div class="text-[11px] text-slate-400 mt-0.5 truncate">{{ $conductedSub }}</div>
                 </div>
             </div>
             <div class="text-center min-w-0 hidden md:block">
@@ -43,12 +69,32 @@
                 <div class="text-xs text-slate-400 truncate">{{ $subtitle }}</div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
+                {{-- compact timer in the header (visible on mobile where the sidebar sits below) --}}
+                <span class="lg:hidden flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm font-bold font-mono text-brand" id="timerMini">--:--</span>
                 <span class="hidden lg:flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600">
                     <svg class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M6 21V9l6-4 6 4v12"/></svg>{{ $tag1 }}
                 </span>
                 <span class="hand hidden xl:block text-base text-blue-300 leading-none text-right">Focus<br>Solve<br>Succeed</span>
             </div>
         </div>
+
+        @if ($hasSections)
+        {{-- ===== Section tabs ===== --}}
+        <div class="border-t border-slate-100 bg-slate-50/70">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2 overflow-x-auto sec-tabs">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wide shrink-0 hidden sm:inline">Sections</span>
+                @foreach ($sections as $si => $s)
+                    <button type="button" id="tab-{{ $si }}" onclick="goSection({{ $si }})" {{ $s['accessible'] ? '' : 'disabled' }}
+                            class="sec-tab shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold border transition whitespace-nowrap {{ $s['accessible'] ? '' : 'opacity-50 cursor-not-allowed' }}"
+                            title="{{ $s['locked'] ? 'Locked' : ($s['accessible'] ? $s['title'] : 'Opens after the previous section') }}">
+                        @if ($s['locked'])<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>@endif
+                        {{ $s['title'] }}
+                        <span class="sec-tab-count text-[10px] font-bold opacity-70" id="tabcount-{{ $si }}">0/{{ count($s['qids']) }}</span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+        @endif
     </header>
 
     <div id="warn" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-rose-600 text-white text-sm py-1.5 px-4 rounded-b-lg shadow">⚠ You left the exam window — this has been logged.</div>
@@ -73,6 +119,22 @@
             <h3 class="text-2xl font-bold mt-4">Exam Terminated</h3>
             <p class="mt-2 opacity-90">You repeatedly left the exam window. Your test has been submitted and marked as <b>FAIL</b>.</p>
             <p class="text-sm opacity-70 mt-2">Submitting…</p>
+        </div>
+    </div>
+
+    {{-- Next-section confirmation --}}
+    <div id="sectionModal" class="hidden fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="w-14 h-14 mx-auto rounded-full bg-violet-100 flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-center text-slate-900">Move to the next section?</h3>
+            <p class="text-slate-500 text-center mt-1 text-sm" id="sectionModalText"></p>
+            <div id="sectionUnanswered" class="hidden mt-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800"></div>
+            <div class="flex gap-3 mt-5">
+                <button type="button" onclick="closeSectionModal()" class="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl font-semibold hover:bg-slate-50">Stay here</button>
+                <button type="button" id="sectionConfirmBtn" onclick="confirmNextSection()" class="flex-1 bg-brand hover:bg-brand-dark text-white py-2.5 rounded-xl font-semibold">Next section →</button>
+            </div>
         </div>
     </div>
 
@@ -103,25 +165,40 @@
         {{-- Question area --}}
         <section class="lg:col-span-2 lg:min-h-0 flex flex-col">
             @foreach ($paper as $i => $item)
-                @php $q = $item['question']; $ans = $answers->get($q->id); $sel = $ans?->selected_option_ids ?? []; @endphp
-                <div class="qpane bg-white rounded-2xl shadow-sm border border-slate-100 flex-col lg:flex-1 lg:min-h-0 {{ $i === 0 ? 'flex' : 'hidden' }}"
-                     id="q-{{ $q->id }}" data-qid="{{ $q->id }}" data-index="{{ $i }}">
+                @php
+                    $q = $item['question']; $ans = $answers->get($q->id); $sel = $ans?->selected_option_ids ?? [];
+                    $si = $hasSections ? ($qSec[$q->id] ?? 0) : null;
+                    $sec = $hasSections ? $sections[$si] : null;
+                    $pos = $hasSections ? ($qPos[$q->id] ?? 0) : $i;
+                    $secCount = $hasSections ? count($sec['qids']) : count($paper);
+                    $marks = $hasSections ? $sec['mpq'] : $q->marks;
+                    $isFirst = $hasSections ? $pos === 0 : $i === 0;
+                    $isLastInSec = $hasSections ? $pos === $secCount - 1 : $i === count($paper) - 1;
+                    $isLastSection = ! $hasSections || $si === count($sections) - 1;
+                @endphp
+                <div class="qpane bg-white rounded-2xl shadow-sm border border-slate-100 flex-col lg:flex-1 lg:min-h-0 {{ $i === $startIndex ? 'flex' : 'hidden' }}"
+                     id="q-{{ $q->id }}" data-qid="{{ $q->id }}" data-index="{{ $i }}" data-section="{{ $si ?? '' }}">
                     {{-- card header --}}
-                    <div class="flex items-center justify-between gap-3 px-6 pt-5 pb-3 border-b border-slate-100 shrink-0">
-                        <h2 class="text-base font-bold text-slate-800">Question <span class="text-brand">{{ $i + 1 }}</span> of {{ count($paper) }}</h2>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg" style="background:rgb(var(--brand-rgb)/.1);color:rgb(var(--brand-rgb))">{{ $q->marks }} mark</span>
+                    <div class="flex items-center justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100 shrink-0">
+                        <div class="min-w-0">
+                            @if ($hasSections)
+                                <div class="text-[11px] font-bold text-brand uppercase tracking-wide truncate">Section: {{ $sec['title'] }}</div>
+                            @endif
+                            <h2 class="text-base font-bold text-slate-800">Question <span class="text-brand">{{ $pos + 1 }}</span> of {{ $secCount }}@if($hasSections) <span class="text-xs font-normal text-slate-400">in this section</span>@endif</h2>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-lg" style="background:rgb(var(--brand-rgb)/.1);color:rgb(var(--brand-rgb))">{{ $marks }} mark{{ $marks == 1 ? '' : 's' }}@if($hasSections && $sec['neg'] > 0) · −{{ \App\Services\SectionService::fmt($sec['neg']) }}@endif</span>
                             <button type="button" onclick="toggleReview({{ $q->id }})"
                                     class="review-btn flex items-center gap-1.5 text-sm font-medium border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 text-slate-600">
                                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
-                                <span class="review-label">Mark for review</span>
+                                <span class="review-label hidden sm:inline">Mark for review</span>
                             </button>
                             <input type="checkbox" class="review-flag hidden" @checked($ans?->marked_for_review)>
                         </div>
                     </div>
 
                     {{-- scrollable question + options --}}
-                    <div class="px-6 py-5 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
+                    <div class="px-4 sm:px-6 py-5 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
                         <p class="text-lg font-semibold text-slate-900 mb-5 leading-relaxed">{{ $q->text }}</p>
 
                         @if (in_array($q->type, ['MCQ_SINGLE','MCQ_MULTI']))
@@ -159,17 +236,20 @@
                     </div>
 
                     {{-- nav (always visible) --}}
-                    <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100 shrink-0 bg-white rounded-b-2xl">
-                        <button type="button" onclick="go({{ $i - 1 }})" {{ $i === 0 ? 'disabled' : '' }}
-                                class="inline-flex items-center gap-2 border-2 border-slate-200 rounded-xl px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span>←</span> Previous
+                    <div class="flex items-center justify-between gap-2 px-4 sm:px-6 py-4 border-t border-slate-100 shrink-0 bg-white rounded-b-2xl">
+                        <button type="button" onclick="go({{ $i - 1 }})" {{ $isFirst ? 'disabled' : '' }}
+                                class="inline-flex items-center gap-2 border-2 border-slate-200 rounded-xl px-4 sm:px-5 py-2.5 font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span>←</span> <span class="hidden sm:inline">Previous</span>
                         </button>
-                        @if ($i === count($paper) - 1)
+                        @if ($isLastInSec && $isLastSection)
                             <button type="button" onclick="submitExam(false)"
-                                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 py-2.5 font-semibold shadow-lg">Submit Test <span>→</span></button>
+                                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 sm:px-6 py-2.5 font-semibold shadow-lg">Submit Test <span>→</span></button>
+                        @elseif ($isLastInSec)
+                            <button type="button" onclick="nextSection({{ $si }})"
+                                    class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-5 sm:px-6 py-2.5 font-semibold shadow-lg">Next Section <span>→</span></button>
                         @else
                             <button type="button" onclick="go({{ $i + 1 }})"
-                                    class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white rounded-xl px-6 py-2.5 font-semibold shadow-lg" style="box-shadow:0 10px 20px -8px rgb(var(--brand-rgb)/.6)">Next Question <span>→</span></button>
+                                    class="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white rounded-xl px-5 sm:px-6 py-2.5 font-semibold shadow-lg" style="box-shadow:0 10px 20px -8px rgb(var(--brand-rgb)/.6)"><span class="hidden sm:inline">Next Question</span><span class="sm:hidden">Next</span> <span>→</span></button>
                         @endif
                     </div>
                 </div>
@@ -181,10 +261,13 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-center">
                 <div class="flex items-center justify-center gap-2 text-slate-500 text-sm mb-0.5">
                     <svg class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                    Time Remaining
+                    {{ $secTimer ? 'Section Time Remaining' : 'Time Remaining' }}
                 </div>
                 <div class="text-4xl font-extrabold text-brand font-mono tracking-tight" id="timer">--:--</div>
                 <div class="flex justify-center gap-6 text-[11px] text-slate-400 mt-0.5"><span>Hours</span><span>Minutes</span><span>Seconds</span></div>
+                @if ($secTimer)
+                    <div class="text-xs text-slate-400 mt-2 border-t border-slate-100 pt-2">Whole exam: <span class="font-mono font-semibold text-slate-600" id="timerOverall">--:--</span> · when section time ends it locks and the next one opens</div>
+                @endif
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
@@ -195,18 +278,47 @@
                 <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                     <div id="progressBar" class="h-full bg-brand rounded-full transition-all" style="width:0%"></div>
                 </div>
+                @if ($hasSections)
+                    <div class="text-xs text-slate-500 mt-2">Current section: <b class="text-slate-700" id="curSecName"></b> · <span id="curSecProgress"></span></div>
+                @endif
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+            {{-- Mobile: collapsible navigator; desktop: always open --}}
+            <button type="button" onclick="document.getElementById('paletteWrap').classList.toggle('hidden')" class="lg:hidden w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 flex items-center justify-between">
+                <span>Question Navigator</span><span class="text-slate-400">▾</span>
+            </button>
+            <div id="paletteWrap" class="hidden lg:block bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
                 <div class="flex items-center justify-between mb-3">
                     <span class="font-semibold text-slate-700">Question Palette</span>
                     <span class="text-xs text-slate-400">{{ count($paper) }} questions</span>
                 </div>
-                <div class="grid grid-cols-6 gap-1.5 mb-3 max-h-52 overflow-y-auto pr-1">
-                    @foreach ($paper as $i => $item)
-                        <button type="button" onclick="go({{ $i }})" id="pal-{{ $i }}"
-                                class="pal-btn aspect-square rounded-md text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50">{{ $i + 1 }}</button>
-                    @endforeach
+                <div class="mb-3 max-h-72 lg:max-h-80 overflow-y-auto pr-1">
+                    @if ($hasSections)
+                        @foreach ($sections as $si => $s)
+                            <div class="mb-3 last:mb-0" id="palsec-{{ $si }}">
+                                <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide mb-1.5 {{ $s['accessible'] ? 'text-slate-600' : 'text-slate-400' }}">
+                                    <span class="truncate">{{ $s['title'] }}</span>
+                                    <span class="font-normal normal-case">@if($s['locked'])🔒 locked @elseif(!$s['accessible'])not yet open @else<span id="palcount-{{ $si }}"></span>@endif</span>
+                                </div>
+                                <div class="grid grid-cols-6 gap-1.5">
+                                    @foreach ($s['qids'] as $pi => $qid)
+                                        @php $gi = $qIndex[$qid] ?? null; @endphp
+                                        @if ($gi !== null)
+                                            <button type="button" onclick="go({{ $gi }})" id="pal-{{ $gi }}" {{ $s['accessible'] ? '' : 'disabled' }}
+                                                    class="pal-btn aspect-square rounded-md text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50">{{ $pi + 1 }}</button>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="grid grid-cols-6 gap-1.5">
+                            @foreach ($paper as $i => $item)
+                                <button type="button" onclick="go({{ $i }})" id="pal-{{ $i }}"
+                                        class="pal-btn aspect-square rounded-md text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50">{{ $i + 1 }}</button>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
                 <div class="grid grid-cols-2 gap-y-1.5 text-xs text-slate-500">
                     <div class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span> Answered</div>
@@ -246,19 +358,32 @@ const CSRF = document.querySelector('meta[name=csrf-token]').content;
 const SAVE_URL = `{{ url('candidate/attempt/'.$attempt->id.'/save') }}`;
 const EVENT_URL = `{{ route('attempt.event', $attempt->id) }}`;
 const SUBMIT_URL = `{{ route('attempt.submit', $attempt->id) }}`;
+const SECTION_URL = `{{ route('attempt.section', $attempt->id) }}`;
 const QIDS = [{{ collect($paper)->map(fn($p)=>$p['question']->id)->implode(',') }}];
 const TOTAL = QIDS.length;
-let current = 0;
+// ---- Sections (empty for plain tests) ----
+const SECTIONS = {!! $sectionsJson !!};
+const QSEC = {!! $qsecJson !!};   // global index -> section index
+const SERVER_NAV = {{ $serverNav ? 'true' : 'false' }};       // next section must be confirmed with the server
+const LOCKS_ON_ADVANCE = {{ $locksOnAdvance ? 'true' : 'false' }};
+const SECTION_TIMER = {{ $secTimer ? 'true' : 'false' }};
+let current = {{ (int) $startIndex }};
 let deadline = Date.now() + {{ (int) $remainingMs }};
+let sectionDeadline = {{ $sectionRemainingMs !== null ? 'Date.now() + '.(int) $sectionRemainingMs : 'null' }};
 
+function secOf(i) { return SECTIONS.length ? QSEC[i] : 0; }
+function firstIndexOfSection(si) { return QSEC.indexOf(si); }
 function go(i) {
     if (i < 0 || i >= TOTAL) return;
+    if (SECTIONS.length && !SECTIONS[secOf(i)].accessible) return;   // locked / not yet open
     current = i;
     document.querySelectorAll('.qpane').forEach(p => { p.classList.add('hidden'); p.classList.remove('flex'); });
     const pane = document.getElementById('q-' + QIDS[i]);
     pane.classList.remove('hidden'); pane.classList.add('flex');
     paintPalette();
+    if (window.innerWidth < 1024) window.scrollTo({ top: 0 });
 }
+function goSection(si) { if (!SECTIONS[si] || !SECTIONS[si].accessible) return; const f = firstIndexOfSection(si); if (f >= 0) go(f); }
 
 function collect(qid) {
     const card = document.getElementById('q-' + qid);
@@ -296,12 +421,30 @@ function toggleReview(qid) {
 function paintPalette() {
     QIDS.forEach((qid, i) => {
         const b = document.getElementById('pal-' + i);
+        if (!b) return;
         const marked = document.getElementById('q-' + qid).querySelector('.review-flag').checked;
-        b.className = 'pal-btn aspect-square rounded-md text-xs font-semibold border transition';
+        const open = !SECTIONS.length || SECTIONS[secOf(i)].accessible;
+        b.className = 'pal-btn aspect-square rounded-md text-xs font-semibold border transition' + (open ? '' : ' opacity-40 cursor-not-allowed');
         if (i === current) b.classList.add('bg-brand','text-white','border-brand');
         else if (marked) b.classList.add('bg-amber-400','text-white','border-amber-400');
         else if (isAnswered(qid)) b.classList.add('bg-emerald-500','text-white','border-emerald-500');
         else b.classList.add('border-slate-200','text-slate-600','hover:bg-slate-50');
+    });
+    // section tabs + per-section counters
+    SECTIONS.forEach((s, si) => {
+        const tab = document.getElementById('tab-' + si);
+        const answered = QIDS.filter((q, i) => QSEC[i] === si && isAnswered(q)).length;
+        const cnt = document.getElementById('tabcount-' + si); if (cnt) cnt.textContent = answered + '/' + s.count;
+        const pc = document.getElementById('palcount-' + si); if (pc) pc.textContent = answered + ' / ' + s.count + ' answered';
+        if (!tab) return;
+        tab.classList.remove('bg-brand','text-white','border-brand','bg-white','text-slate-600','border-slate-200');
+        if (si === secOf(current)) tab.classList.add('bg-brand','text-white','border-brand');
+        else tab.classList.add('bg-white','text-slate-600','border-slate-200');
+        if (si === secOf(current)) {
+            const n = document.getElementById('curSecName'), p = document.getElementById('curSecProgress');
+            if (n) n.textContent = s.title;
+            if (p) p.textContent = answered + ' / ' + s.count + ' answered';
+        }
     });
 }
 function updateProgress() {
@@ -310,14 +453,56 @@ function updateProgress() {
     document.getElementById('progressBar').style.width = (TOTAL ? (n / TOTAL * 100) : 0) + '%';
 }
 
+// ---- Section flow ----
+let pendingSection = null;
+function nextSection(si) {
+    if (!SECTIONS.length || si >= SECTIONS.length - 1) return;
+    const unanswered = QIDS.map((q, i) => ({ q, i })).filter(o => QSEC[o.i] === si && !isAnswered(o.q));
+    if (!SERVER_NAV) {                      // free navigation: just jump, nothing is locked
+        go(firstIndexOfSection(si + 1));
+        return;
+    }
+    pendingSection = si;
+    const box = document.getElementById('sectionUnanswered');
+    document.getElementById('sectionModalText').textContent = LOCKS_ON_ADVANCE
+        ? 'You will not be able to come back to "' + SECTIONS[si].title + '" once you move on.'
+        : 'You are about to open "' + SECTIONS[si + 1].title + '".';
+    if (unanswered.length) {
+        box.classList.remove('hidden');
+        box.innerHTML = '⚠ <b>' + unanswered.length + ' question' + (unanswered.length > 1 ? 's' : '') + ' not attempted</b> in this section (Q ' +
+            unanswered.map(o => QSEC.slice(0, o.i).filter(x => x === si).length + 1).join(', ') + ').';
+    } else { box.classList.add('hidden'); }
+    document.getElementById('sectionModal').classList.remove('hidden');
+}
+function closeSectionModal() { document.getElementById('sectionModal').classList.add('hidden'); pendingSection = null; }
+function confirmNextSection() { postSection(); }
+function postSection() {
+    if (submitting) return;
+    submitting = true; window.onbeforeunload = null;
+    const f = document.createElement('form'); f.method = 'POST'; f.action = SECTION_URL;
+    f.innerHTML = `<input type="hidden" name="_token" value="${CSRF}"><input type="hidden" name="action" value="next">`;
+    document.body.appendChild(f); f.submit();
+}
+
+// ---- Clock (server-authoritative deadlines rendered client-side) ----
+function fmtMs(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const pad = x => String(x).padStart(2, '0');
+    return (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(sec);
+}
 function tick() {
     const ms = deadline - Date.now();
-    const t = document.getElementById('timer');
-    if (ms <= 0) { t.textContent = '00:00'; submitExam(true); return; }
-    const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-    const pad = x => String(x).padStart(2, '0');
-    t.textContent = (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(sec);
-    if (ms < 60000) { t.classList.remove('text-brand'); t.classList.add('text-rose-500'); }
+    const t = document.getElementById('timer'), mini = document.getElementById('timerMini'), ov = document.getElementById('timerOverall');
+    if (ms <= 0) { t.textContent = '00:00'; if (mini) mini.textContent = '00:00'; submitExam(true); return; }
+    let shown = ms;
+    if (SECTION_TIMER && sectionDeadline !== null) {
+        const sms = sectionDeadline - Date.now();
+        if (ov) ov.textContent = fmtMs(ms);
+        if (sms <= 0) { t.textContent = '00:00'; if (mini) mini.textContent = '00:00'; postSection(); return; }   // server locks & advances
+        shown = sms;
+    }
+    t.textContent = fmtMs(shown); if (mini) mini.textContent = fmtMs(shown);
+    if (shown < 60000) { t.classList.remove('text-brand'); t.classList.add('text-rose-500'); if (mini) { mini.classList.remove('text-brand'); mini.classList.add('text-rose-500'); } }
 }
 setInterval(tick, 1000); tick();
 
@@ -413,9 +598,17 @@ function submitExam(auto, term) {
     const btn = document.getElementById('submitConfirmBtn');
     if (unanswered.length) {
         box.classList.remove('hidden');
+        let detail;
+        if (SECTIONS.length) {
+            detail = SECTIONS.map((s, si) => {
+                const qs = unanswered.filter(o => QSEC[o.i] === si).map(o => QSEC.slice(0, o.i).filter(x => x === si).length + 1);
+                return qs.length ? '<b>' + s.title + '</b>: Q ' + qs.join(', ') : null;
+            }).filter(Boolean).join(' · ');
+        } else {
+            detail = 'Q ' + unanswered.map(o => o.i + 1).join(', ');
+        }
         document.getElementById('submitUnansweredText').innerHTML =
-            'You have <b>not attempted ' + unanswered.length + ' question' + (unanswered.length > 1 ? 's' : '') + '</b> (Q ' +
-            unanswered.map(o => o.i + 1).join(', ') + '). They will be marked as unanswered.';
+            'You have <b>not attempted ' + unanswered.length + ' question' + (unanswered.length > 1 ? 's' : '') + '</b> (' + detail + '). They will be marked as unanswered.';
         btn.textContent = 'Submit anyway';
     } else {
         box.classList.add('hidden');

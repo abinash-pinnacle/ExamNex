@@ -22,6 +22,7 @@ class Test extends Model
         'email_notification', 'feedback_form', 'completion_message', 'redirect_url',
         'grace_minutes', 'require_registration', 'access_password', 'is_template', 'question_order',
         'negative_marks',
+        'use_sections', 'section_navigation', 'timer_mode', 'allow_section_return',
     ];
 
     protected function casts(): array
@@ -52,6 +53,8 @@ class Test extends Model
             'require_registration' => 'boolean',
             'is_template' => 'boolean',
             'passing_percent' => 'integer',
+            'use_sections' => 'boolean',
+            'allow_section_return' => 'boolean',
         ];
     }
 
@@ -60,4 +63,10 @@ class Test extends Model
     public function assignments(): HasMany   { return $this->hasMany(TestAssignment::class); }
     public function attempts(): HasMany      { return $this->hasMany(Attempt::class); }
     public function creator(): BelongsTo     { return $this->belongsTo(User::class, 'created_by'); }
+
+    /** True when this test runs the section-wise engine (flag on AND at least one section). */
+    public function usesSections(): bool
+    {
+        return (bool) $this->use_sections && $this->sections()->exists();
+    }
 }

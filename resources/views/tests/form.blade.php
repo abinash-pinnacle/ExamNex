@@ -19,6 +19,17 @@
     $passMarks = (int) old('passing_marks', $src->passing_marks ?? 0);
     $passMode = old('passing_mode', ($passPercent !== null) ? 'percent' : ($editing && !($src->passing_percent ?? null) ? 'marks' : 'percent'));
     $passPercentVal = $passPercent ?? (int) $S('default_passing_percent', 40);
+    // Section-wise exam (competitive-exam style)
+    $useSections = old() && request()->isMethod('post') ? (bool) old('use_sections') : (bool) ($src->use_sections ?? false);
+    $secNav = old('section_navigation', $src->section_navigation ?? 'FREE');
+    $timerMode = old('timer_mode', $src->timer_mode ?? 'OVERALL');
+    $allowReturn = old() && request()->isMethod('post') ? (bool) old('allow_section_return') : (bool) ($src->allow_section_return ?? true);
+    $sectionRows = old('sections');
+    if ($sectionRows === null) {
+        $sectionRows = $src ? $src->sections->map(fn ($s) => $s->toArray())->values()->all() : [];
+    } else {
+        $sectionRows = array_values($sectionRows);
+    }
 @endphp
 
 <div class="flex items-center gap-2 text-sm text-slate-500 mb-3 shrink-0">
@@ -112,7 +123,7 @@
                         </span>
                         <div class="min-w-0">
                             <div class="font-bold text-slate-800 text-sm">Passing Criteria <span class="text-rose-500">*</span></div>
-                            <div class="text-xs text-slate-400">The score a candidate needs to <b>PASS</b> — as a % of total (recommended) or fixed marks.</div>
+                            <div class="text-xs text-slate-400" id="passCritHint">The score a candidate needs to <b>PASS</b> — as a % of total (recommended) or fixed marks.</div>
                         </div>
                     </div>
                     <input type="hidden" name="passing_mode" id="passing_mode" value="{{ $passMode }}">
@@ -154,6 +165,102 @@
                         </select>
                     </div>
                 </div>
+            </div>
+
+            {{-- Section Configuration (competitive-exam style sections) --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6" id="sectionsCard">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span>
+                        <div><div class="font-bold text-slate-800">Section Configuration</div><div class="text-xs text-slate-400">Split the paper into sections (e.g. GK · English · Maths) — each with its own question count, marks, qualifying marks and negative marking.</div></div>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer shrink-0">
+                        <input type="hidden" name="use_sections" value="0">
+                        <input type="checkbox" name="use_sections" value="1" id="useSections" @checked($useSections) onchange="toggleSections(this.checked)" class="w-4 h-4 rounded border-slate-300" style="accent-color:rgb(var(--brand-rgb))">
+                        <span class="text-sm font-semibold text-slate-700">Section-wise exam</span>
+                    </label>
+                </div>
+
+                <div id="sectionsBody" class="{{ $useSections ? '' : 'hidden' }} mt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Section navigation</label>
+                            <select name="section_navigation" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-brand outline-none">
+                                <option value="FREE" @selected($secNav==='FREE')>Free — move between sections anytime</option>
+                                <option value="SEQUENTIAL" @selected($secNav==='SEQUENTIAL')>Sequential — complete sections in order</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Timer</label>
+                            <select name="timer_mode" id="timerMode" onchange="updateSectionSummary()" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-brand outline-none">
+                                <option value="OVERALL" @selected($timerMode==='OVERALL')>Overall — one clock for the whole exam</option>
+                                <option value="SECTION" @selected($timerMode==='SECTION')>Section-wise — each section has its own time</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end pb-2">
+                            <label class="flex items-center gap-2 cursor-pointer text-sm">
+                                <input type="hidden" name="allow_section_return" value="0">
+                                <input type="checkbox" name="allow_section_return" value="1" @checked($allowReturn) class="w-4 h-4 rounded border-slate-300" style="accent-color:rgb(var(--brand-rgb))">
+                                <span class="text-slate-600 leading-tight">Allow returning to a previous section <span class="text-slate-400 text-xs">(sequential mode)</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="sectionList" class="space-y-3"></div>
+
+                    <button type="button" onclick="addSection()" class="mt-3 w-full border-2 border-dashed border-slate-300 rounded-xl py-3 text-sm font-semibold text-slate-600 hover:border-brand hover:text-brand transition">+ Add Section</button>
+
+                    <div class="mt-4 rounded-xl bg-slate-50 border border-slate-100 p-4">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Exam Summary</div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div><div class="text-2xl font-extrabold text-slate-800" id="sumSections">0</div><div class="text-xs text-slate-400">Total sections</div></div>
+                            <div><div class="text-2xl font-extrabold text-slate-800" id="sumQuestions">0</div><div class="text-xs text-slate-400">Total questions</div></div>
+                            <div><div class="text-2xl font-extrabold text-slate-800" id="sumMarks">0</div><div class="text-xs text-slate-400">Total marks</div></div>
+                            <div><div class="text-base font-bold text-slate-800 leading-tight mt-1.5">Section-wise</div><div class="text-xs text-slate-400">Qualifying</div></div>
+                        </div>
+                        <div class="text-xs text-slate-500 mt-2 leading-relaxed" id="sumNote"></div>
+                    </div>
+                </div>
+
+                <template id="secTpl">
+                    <details class="sec-row rounded-xl border border-slate-200 bg-white" open draggable="true">
+                        <summary class="flex items-center gap-2 px-4 py-3 cursor-pointer list-none select-none">
+                            <span class="text-slate-300 cursor-grab text-lg leading-none" title="Drag to reorder">≡</span>
+                            <span class="sec-badge w-6 h-6 rounded-md bg-brand/10 text-brand text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                            <span class="sec-name font-semibold text-slate-800 flex-1 truncate">New section</span>
+                            <span class="sec-meta text-xs text-slate-400 hidden sm:inline shrink-0"></span>
+                            <span class="flex items-center gap-1 shrink-0">
+                                <button type="button" onclick="event.preventDefault();moveSection(this,-1)" class="w-7 h-7 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs" title="Move up">↑</button>
+                                <button type="button" onclick="event.preventDefault();moveSection(this,1)" class="w-7 h-7 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs" title="Move down">↓</button>
+                                <button type="button" onclick="event.preventDefault();removeSection(this)" class="h-7 px-2 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium">Remove</button>
+                                <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                            </span>
+                        </summary>
+                        <div class="px-4 pb-4 pt-3 border-t border-slate-100">
+                            <input type="hidden" name="sections[__I__][id]" class="f-id" value="">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="md:col-span-2"><label class="block text-xs font-medium text-slate-500 mb-1">Section name <span class="text-rose-500">*</span></label><input name="sections[__I__][title]" class="f-title w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" placeholder="e.g. General Knowledge" oninput="secChanged()"></div>
+                                <div><label class="block text-xs font-medium text-slate-500 mb-1">Description (optional)</label><input name="sections[__I__][description]" class="f-desc w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" placeholder="Shown to candidates"></div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3">
+                                <div><label class="block text-xs font-medium text-slate-500 mb-1">Questions <span class="text-rose-500">*</span></label><input type="number" min="1" name="sections[__I__][question_count]" class="f-qc w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" value="10" oninput="secChanged()"></div>
+                                <div><label class="block text-xs font-medium text-slate-500 mb-1">Marks / question</label><input type="number" min="1" name="sections[__I__][marks_per_question]" class="f-mpq w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" value="1" oninput="secChanged()"></div>
+                                <div><label class="block text-xs font-medium text-slate-500 mb-1">Qualifying marks</label><input type="number" min="0" step="0.5" name="sections[__I__][qualifying_marks]" class="f-qual w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" value="0" oninput="secChanged()"></div>
+                                <div><label class="block text-xs font-medium text-slate-500 mb-1">Negative marking</label><input type="number" min="0" step="0.25" name="sections[__I__][negative_marks]" class="f-neg w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" value="0" placeholder="0.25"></div>
+                                <div><label class="block text-xs font-medium text-slate-500 mb-1">Time (min) <span class="text-slate-400 font-normal">optional</span></label><input type="number" min="0" name="sections[__I__][duration_minutes]" class="f-dur w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand outline-none" placeholder="—" oninput="secChanged()"></div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-sm">
+                                <label class="flex items-center gap-2"><span class="text-slate-500 text-xs">Pick questions</span>
+                                    <select name="sections[__I__][selection_method]" class="f-sel rounded-lg border border-slate-300 px-2 py-1.5 text-sm"><option value="RANDOM">Randomly from the section pool</option><option value="SEQUENTIAL">In the order added</option></select>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="hidden" name="sections[__I__][shuffle_questions]" value="0"><input type="checkbox" name="sections[__I__][shuffle_questions]" value="1" class="f-shq w-4 h-4 rounded border-slate-300" checked style="accent-color:rgb(var(--brand-rgb))"><span class="text-slate-600">Shuffle questions</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="hidden" name="sections[__I__][shuffle_options]" value="0"><input type="checkbox" name="sections[__I__][shuffle_options]" value="1" class="f-sho w-4 h-4 rounded border-slate-300" checked style="accent-color:rgb(var(--brand-rgb))"><span class="text-slate-600">Shuffle options</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="hidden" name="sections[__I__][is_mandatory]" value="0"><input type="checkbox" name="sections[__I__][is_mandatory]" value="1" class="f-man w-4 h-4 rounded border-slate-300" checked style="accent-color:rgb(var(--brand-rgb))"><span class="text-slate-600">Must qualify (mandatory)</span></label>
+                                <span class="text-xs text-slate-400 sec-max sm:ml-auto"></span>
+                            </div>
+                        </div>
+                    </details>
+                </template>
             </div>
 
             {{-- Advanced Settings --}}
@@ -340,7 +447,94 @@
     function prefixDesc(p){ const b=$('descBox'); const s=b.selectionStart; b.value=b.value.slice(0,s)+'\n'+p+b.value.slice(s); descCount(); }
     // password toggle
     function togglePw(cb){ $('pwField').classList.toggle('hidden', !cb.checked); if(!cb.checked) $('pwField').value=''; }
+    // ---- Section builder ----
+    const INIT_SECTIONS = @json($sectionRows);
+    const BASE_TOTAL = $('pv_marks').value;
+    let dragRow = null;
+    function secRows(){ return [...document.querySelectorAll('#sectionList .sec-row')]; }
+    function renumberSections(){
+        secRows().forEach((row, i) => {
+            row.querySelectorAll('[name]').forEach(el => { el.name = el.name.replace(/sections\[[^\]]*\]/, 'sections[' + i + ']'); });
+            row.querySelector('.sec-badge').textContent = i + 1;
+            const t = row.querySelector('.f-title').value.trim();
+            row.querySelector('.sec-name').textContent = t || ('Section ' + (i + 1));
+            const qc = parseInt(row.querySelector('.f-qc').value) || 0, mpq = parseInt(row.querySelector('.f-mpq').value) || 1;
+            const qual = row.querySelector('.f-qual').value || 0, dur = row.querySelector('.f-dur').value;
+            row.querySelector('.sec-meta').textContent = qc + ' Q · ' + (qc * mpq) + ' marks · qualify ' + qual + (dur ? ' · ' + dur + ' min' : '');
+            row.querySelector('.sec-max').textContent = 'Max ' + (qc * mpq) + ' marks in this section';
+        });
+        updateSectionSummary();
+    }
+    function addSection(data){
+        const tpl = document.getElementById('secTpl').content.cloneNode(true);
+        const row = tpl.querySelector('.sec-row');
+        const i = secRows().length;
+        row.querySelectorAll('[name]').forEach(el => el.name = el.name.replace('__I__', i));
+        if (data) {
+            const off = v => v === false || v === 0 || v === '0';
+            row.querySelector('.f-id').value = data.id || '';
+            row.querySelector('.f-title').value = data.title || '';
+            row.querySelector('.f-desc').value = data.description || '';
+            row.querySelector('.f-qc').value = data.question_count ?? 10;
+            row.querySelector('.f-mpq').value = data.marks_per_question ?? 1;
+            row.querySelector('.f-qual').value = data.qualifying_marks ?? 0;
+            row.querySelector('.f-neg').value = data.negative_marks ?? 0;
+            row.querySelector('.f-dur').value = data.duration_minutes ?? '';
+            row.querySelector('.f-sel').value = data.selection_method || 'RANDOM';
+            row.querySelector('.f-shq').checked = !off(data.shuffle_questions ?? true);
+            row.querySelector('.f-sho').checked = !off(data.shuffle_options ?? true);
+            row.querySelector('.f-man').checked = !off(data.is_mandatory ?? true);
+            if (data.title) row.removeAttribute('open');
+        }
+        row.addEventListener('dragstart', e => { dragRow = row; e.dataTransfer.effectAllowed = 'move'; });
+        row.addEventListener('dragover', e => e.preventDefault());
+        row.addEventListener('drop', e => {
+            e.preventDefault();
+            if (!dragRow || dragRow === row) return;
+            const rows = secRows();
+            document.getElementById('sectionList').insertBefore(dragRow, rows.indexOf(dragRow) < rows.indexOf(row) ? row.nextSibling : row);
+            renumberSections();
+        });
+        document.getElementById('sectionList').appendChild(row);
+        renumberSections();
+    }
+    function removeSection(btn){
+        const row = btn.closest('.sec-row');
+        if (row.querySelector('.f-id').value && !confirm('Remove this section? Questions assigned to it become unassigned.')) return;
+        row.remove(); renumberSections();
+    }
+    function moveSection(btn, dir){
+        const row = btn.closest('.sec-row'), list = row.parentElement;
+        if (dir < 0 && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
+        if (dir > 0 && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
+        renumberSections();
+    }
+    function secChanged(){ renumberSections(); }
+    function updateSectionSummary(){
+        const on = $('useSections').checked, rows = secRows();
+        let q = 0, m = 0, mins = 0;
+        rows.forEach(r => {
+            const qc = parseInt(r.querySelector('.f-qc').value) || 0, mpq = parseInt(r.querySelector('.f-mpq').value) || 1;
+            q += qc; m += qc * mpq; mins += parseInt(r.querySelector('.f-dur').value) || 0;
+        });
+        $('sumSections').textContent = rows.length; $('sumQuestions').textContent = q; $('sumMarks').textContent = m;
+        const sectionTimer = $('timerMode').value === 'SECTION';
+        $('sumNote').innerHTML = (sectionTimer ? 'Section-wise timer: total exam time = <b>' + mins + ' min</b> (sum of section times; every section needs a time). ' : '')
+            + 'Candidates must qualify in <b>every mandatory section</b> AND reach the overall qualifying marks set in "Passing Criteria" above. Section marks and negative marking override the test-level settings.';
+        // Total marks for the passing-criteria preview follow the sections when enabled.
+        $('pv_marks').value = on ? m : BASE_TOTAL;
+        $('passCritHint').innerHTML = on
+            ? '<b>Overall qualifying marks</b> — required in addition to each section\'s own qualifying marks (set 0 to rely on sections only).'
+            : 'The score a candidate needs to <b>PASS</b> — as a % of total (recommended) or fixed marks.';
+        syncPass();
+    }
+    function toggleSections(on){ $('sectionsBody').classList.toggle('hidden', !on); if (on && secRows().length === 0) addSection(); updateSectionSummary(); }
+    document.getElementById('testForm').addEventListener('submit', renumberSections);
+
     descCount(); setPassMode($('passing_mode').value);
+    INIT_SECTIONS.forEach(s => addSection(s));
+    if ($('useSections').checked && secRows().length === 0) addSection();
+    updateSectionSummary();
 </script>
 @endpush
 </div>

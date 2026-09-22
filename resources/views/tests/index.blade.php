@@ -17,6 +17,7 @@
                 <tr>
                     <td class="px-4 py-2 font-medium"><a href="{{ route('tests.show', $t) }}" class="text-brand hover:underline">{{ $t->title }}</a>
                         @if ($t->public_access)<span class="ml-1 text-xs bg-indigo-100 text-indigo-700 px-1.5 rounded">public</span>@endif
+                        @if ($t->use_sections && $t->sections_count)<span class="ml-1 text-xs bg-violet-100 text-violet-700 px-1.5 rounded">{{ $t->sections_count }} sections</span>@endif
                     </td>
                     <td class="px-4 py-2"><x-status :value="$t->status" /></td>
                     <td class="px-4 py-2">{{ $t->test_questions_count }}</td>

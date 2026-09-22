@@ -14,7 +14,7 @@ class Attempt extends Model
         'test_id', 'candidate_id', 'status', 'started_at', 'deadline_at',
         'submitted_at', 'last_saved_at', 'system_check_passed', 'violations',
         'question_order', 'auto_score', 'manual_score', 'total_score',
-        'max_score', 'passed', 'resume_count', 'terminated',
+        'max_score', 'passed', 'resume_count', 'terminated', 'section_state', 'result_reason',
     ];
 
     protected function casts(): array
@@ -32,10 +32,12 @@ class Attempt extends Model
             'total_score' => 'float',
             'max_score' => 'float',
             'passed' => 'boolean',
+            'section_state' => 'array',
         ];
     }
 
     public function test(): BelongsTo      { return $this->belongsTo(Test::class); }
     public function candidate(): BelongsTo { return $this->belongsTo(User::class, 'candidate_id'); }
     public function answers(): HasMany     { return $this->hasMany(AttemptAnswer::class); }
+    public function sectionResults(): HasMany { return $this->hasMany(AttemptSectionResult::class)->orderBy('order'); }
 }
