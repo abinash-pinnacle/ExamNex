@@ -24,7 +24,7 @@
     </style>
 </head>
 <body class="h-full bg-[#eef3fb] text-slate-800">
-<div class="min-h-screen flex flex-col">
+<div class="app-shell flex flex-col overflow-hidden">
 
     {{-- ================= HEADER ================= --}}
     <header class="bg-white/90 backdrop-blur border-b border-slate-100 shrink-0">
@@ -49,7 +49,7 @@
     </header>
 
     {{-- ================= MAIN ================= --}}
-    <main class="flex-1 flex items-stretch">
+    <main class="flex-1 min-h-0 flex items-stretch overflow-hidden">
 
         {{-- ---- LEFT: brand / features ---- --}}
         <aside class="hidden lg:flex lg:w-[31%] xl:w-[33%] relative overflow-hidden flex-col justify-center px-8 xl:px-11 py-10 text-white"
@@ -91,7 +91,8 @@
         </aside>
 
         {{-- ---- CENTER: registration form ---- --}}
-        <div class="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div class="flex-1 min-h-0 overflow-y-auto">
+          <div class="min-h-full flex items-center justify-center p-4 sm:p-8">
             <div class="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8">
                 <div class="flex items-start gap-3 pb-5 border-b border-slate-100">
                     <span class="w-12 h-12 rounded-2xl bg-blue-50 text-brand flex items-center justify-center shrink-0">
@@ -161,6 +162,7 @@
                     Your information is secure and will only be used for this assessment.
                 </div>
             </div>
+          </div>
         </div>
 
         {{-- ---- RIGHT: decorative ---- --}}
@@ -190,13 +192,8 @@
 
     {{-- ================= FOOTER ================= --}}
     <footer class="bg-white border-t border-slate-100 shrink-0">
-        <div class="max-w-[1600px] mx-auto px-5 sm:px-8 py-3 flex items-center justify-between text-xs text-slate-400">
-            <span>&copy; {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
-            <span class="flex gap-5">
-                <a href="#" class="hover:text-slate-600">Privacy</a>
-                <a href="#" class="hover:text-slate-600">Terms</a>
-                <a href="mailto:support@examnex.test" class="hover:text-slate-600">Support</a>
-            </span>
+        <div class="max-w-[1600px] mx-auto px-5 sm:px-8 py-2.5 text-center text-[11px] text-slate-400">
+            &copy; {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.
         </div>
     </footer>
 </div>
