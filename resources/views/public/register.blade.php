@@ -193,7 +193,7 @@
     {{-- ================= FOOTER ================= --}}
     <footer class="bg-white border-t border-slate-100 shrink-0">
         <div class="max-w-[1600px] mx-auto px-5 sm:px-8 py-2.5 text-center text-[11px] text-slate-400">
-            &copy; {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.
+<x-copyright />
         </div>
     </footer>
 </div>

@@ -116,7 +116,7 @@
             @yield('content')
 
             <footer class="mt-8 pt-4 flex items-center justify-center text-center text-[11px] text-slate-400 border-t border-slate-200">
-                <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
+                <x-copyright />
             </footer>
         </main>
     </div>

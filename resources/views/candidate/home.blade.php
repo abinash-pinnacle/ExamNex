@@ -103,7 +103,7 @@
 </main>
 
 <footer class="shrink-0 max-w-5xl mx-auto w-full px-6 py-4 flex items-center justify-center text-center text-[11px] text-slate-400">
-    <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
+    <x-copyright />
 </footer>
 </div>
 </body>

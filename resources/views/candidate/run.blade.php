@@ -348,7 +348,7 @@
             <svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
             <span class="hidden sm:inline">Secure Assessment Environment · monitored</span>
         </span>
-        <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
+        <x-copyright />
     </footer>
 </div>
 

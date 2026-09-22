@@ -76,7 +76,7 @@
             </div>
         </div>
 
-        <div class="relative z-10 text-xs text-blue-200/60">© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</div>
+        <div class="relative z-10 text-xs text-blue-200/60"><x-copyright class="hover:text-white" /></div>
     </div>
 
     {{-- ============ RIGHT — sign-in form ============ --}}
