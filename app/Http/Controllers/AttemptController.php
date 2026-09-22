@@ -40,7 +40,14 @@ class AttemptController extends Controller
         $answers = $attempt->answers()->get()->keyBy('question_id');
         $remainingMs = $attempt->deadline_at->getTimestamp() * 1000 - now()->getTimestamp() * 1000;
 
-        return view('candidate.run', compact('attempt', 'test', 'paper', 'answers', 'remainingMs'));
+        // Never cache the live exam: after submit, pressing Back must hit the
+        // server again (status is no longer IN_PROGRESS -> redirect to result)
+        // instead of restoring the old exam from the browser/bfcache.
+        return response()
+            ->view('candidate.run', compact('attempt', 'test', 'paper', 'answers', 'remainingMs'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function save(Request $request, Attempt $attempt)

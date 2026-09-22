@@ -216,6 +216,10 @@
 </div>
 
 <script>
+// If this page is restored from the back/forward (bfcache) after the exam was
+// submitted, force a fresh server load so the user lands on the result page
+// instead of re-entering a finished exam.
+window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
 const CSRF = document.querySelector('meta[name=csrf-token]').content;
 const SAVE_URL = `{{ url('candidate/attempt/'.$attempt->id.'/save') }}`;
 const EVENT_URL = `{{ route('attempt.event', $attempt->id) }}`;
