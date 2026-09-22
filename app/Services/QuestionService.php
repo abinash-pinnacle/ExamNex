@@ -93,6 +93,7 @@ class QuestionService
                 $q = Question::create([
                     'type' => $d['type'],
                     'text' => trim($d['text']),
+                    'image_path' => $d['imagePath'] ?? null,
                     'normalized_text' => $norm,
                     'topic_id' => $path['topicId'],
                     'category' => $path['folder'],
@@ -145,6 +146,7 @@ class QuestionService
                 $q->update([
                     'type' => $d['type'],
                     'text' => trim($d['text']),
+                    'image_path' => $d['imagePath'] ?? null,
                     'normalized_text' => $norm,
                     'topic_id' => $path['topicId'],
                     'category' => $path['folder'],
@@ -210,6 +212,26 @@ class QuestionService
         return preg_replace('/[\s_\-]+/', '', mb_strtolower($s));
     }
 
+    /**
+     * Accept only a safe image reference for import: an https(s) URL or a local
+     * /uploads/... path already on this server. Anything else is ignored (no SVG,
+     * no arbitrary local paths) — mirrors the manual-upload restrictions.
+     */
+    public static function cleanImageRef(string $s): ?string
+    {
+        $s = trim($s);
+        if ($s === '') {
+            return null;
+        }
+        if (preg_match('#^https?://#i', $s) && ! preg_match('#\.svgz?(\?|$)#i', $s)) {
+            return $s;
+        }
+        if (preg_match('#^/uploads/[\w./-]+\.(png|jpe?g|webp|gif)$#i', $s)) {
+            return $s;
+        }
+        return null;
+    }
+
     private static function mapType(string $v): string
     {
         $t = self::normKey($v);
@@ -250,6 +272,7 @@ class QuestionService
             'type' => $type,
             'text' => $text,
             'difficulty' => in_array($diff, ['EASY', 'MEDIUM', 'HARD'], true) ? $diff : null,
+            'imagePath' => self::cleanImageRef($row['image'] ?? $row['imageurl'] ?? $row['imagepath'] ?? ''),
             'marks' => isset($row['marks']) && $row['marks'] !== '' ? (int) $row['marks'] : 1,
             'negativeMarks' => ($row['negativemarks'] ?? $row['negative'] ?? '') !== '' ? (float) ($row['negativemarks'] ?? $row['negative']) : 0,
             'explanation' => $row['explanation'] ?? null,

@@ -22,7 +22,7 @@
 
     <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
     <form method="POST" action="{{ $editing ? route('questions.update', $question) : route('questions.store') }}"
-          class="bg-white rounded-xl shadow-sm p-6 space-y-5" id="qform">
+          enctype="multipart/form-data" class="bg-white rounded-xl shadow-sm p-6 space-y-5" id="qform">
         @csrf
         @if ($editing) @method('PUT') @endif
 
@@ -91,6 +91,21 @@
             <p id="dupwarn" class="text-xs text-rose-600 mt-1 hidden"></p>
         </div>
 
+        {{-- Question image (e.g. a reasoning / puzzle diagram) --}}
+        <div>
+            <label class="block text-sm font-medium mb-1">Image <span class="text-slate-400 font-normal">(optional — for reasoning / puzzle diagrams)</span></label>
+            @if ($editing && $question->image_path)
+                <div class="mb-2">
+                    <img src="{{ $question->image_path }}" class="max-h-48 rounded-lg border border-slate-200">
+                    <label class="flex items-center gap-2 text-sm text-rose-600 mt-1 cursor-pointer"><input type="checkbox" name="remove_image" value="1" class="rounded border-slate-300"> Remove this image</label>
+                </div>
+            @endif
+            <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewImg(this)"
+                   class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand file:text-white file:text-sm file:font-medium hover:file:bg-brand-dark">
+            <img id="imgPreview" class="hidden max-h-48 rounded-lg border border-slate-200 mt-2">
+            <p class="text-xs text-slate-400 mt-1">PNG, JPG, WEBP or GIF · up to 4 MB. It appears above the options during the exam.</p>
+        </div>
+
         {{-- MCQ options --}}
         <div data-type="MCQ_SINGLE MCQ_MULTI" class="type-block">
             <label class="block text-sm font-medium mb-2">Options <span class="text-slate-400 font-normal">(tick the correct one/s)</span></label>
@@ -155,6 +170,10 @@
 
 @push('scripts')
 <script>
+function previewImg(input) {
+    const img = document.getElementById('imgPreview');
+    if (input.files && input.files[0]) { img.src = URL.createObjectURL(input.files[0]); img.classList.remove('hidden'); }
+}
 (function () {
     const typeSel = document.getElementById('type');
     function refreshType() {

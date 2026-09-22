@@ -61,6 +61,7 @@ class QuestionController extends Controller
     {
         $this->validateQuestion($request);
         $input = $this->buildInput($request);
+        $input['imagePath'] = $this->resolveImage($request, null);
         $res = QuestionService::create($input, $request->user()->id);
         return $this->respond($res, 'Question created.');
     }
@@ -69,8 +70,32 @@ class QuestionController extends Controller
     {
         $this->validateQuestion($request);
         $input = $this->buildInput($request);
+        $input['imagePath'] = $this->resolveImage($request, $question);
         $res = QuestionService::update($question->id, $input, $request->user()->id);
         return $this->respond($res, 'Question updated.');
+    }
+
+    /**
+     * Resolve the question image: a freshly uploaded file (stored under
+     * public/uploads/questions with a server-detected extension), the existing
+     * image when unchanged, or null when the user ticked "remove".
+     */
+    private function resolveImage(Request $request, ?Question $existing): ?string
+    {
+        if ($request->boolean('remove_image')) {
+            return null;
+        }
+        if ($request->hasFile('image')) {
+            $dir = public_path('uploads/questions');
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            $ext = $request->file('image')->extension() ?: 'png'; // server-detected, never the client extension
+            $name = 'q-' . time() . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $request->file('image')->move($dir, $name);
+            return '/uploads/questions/' . $name;
+        }
+        return $existing?->image_path;
     }
 
     /** Reject blank / symbol-only text and unknown question types before saving. */
@@ -79,6 +104,8 @@ class QuestionController extends Controller
         $request->validate([
             'text' => 'required|string|max:5000',
             'type' => ['required', \Illuminate\Validation\Rule::in(['MCQ_SINGLE', 'MCQ_MULTI', 'TRUE_FALSE', 'FILL_BLANK', 'NUMERIC', 'DESCRIPTIVE'])],
+            // Optional question image (e.g. a reasoning/puzzle diagram). No SVG (stored-XSS).
+            'image' => 'nullable|image|mimes:png,jpg,jpeg,webp,gif|max:4096',
         ], [], ['text' => 'question text']);
 
         if (\App\Support\Normalizer::questionText((string) $request->input('text')) === '') {
@@ -144,14 +171,15 @@ class QuestionController extends Controller
     {
         $headers = ['folder', 'subject', 'topic', 'type', 'question',
             'option1', 'option2', 'option3', 'option4', 'correct',
-            'difficulty', 'marks', 'negative', 'tolerance', 'explanation', 'modelanswer'];
+            'difficulty', 'marks', 'negative', 'tolerance', 'explanation', 'modelanswer', 'image'];
 
         $rows = [
-            ['General Knowledge', 'Science', 'Physics', 'mcq', 'What is the SI unit of force?', 'Newton', 'Joule', 'Watt', 'Pascal', '1', 'EASY', '1', '0', '', 'Force is measured in Newtons.', ''],
-            ['General Knowledge', 'Science', 'Physics', 'multi', 'Which are vector quantities?', 'Velocity', 'Speed', 'Acceleration', 'Mass', '1,3', 'MEDIUM', '2', '0', '', '', ''],
-            ['General Knowledge', 'Science', 'Physics', 'truefalse', 'Light travels faster than sound.', '', '', '', '', 'true', 'EASY', '1', '0', '', '', ''],
-            ['General Knowledge', 'Maths', 'Basics', 'numeric', 'How many metres in 2 km?', '', '', '', '', '2000', 'EASY', '1', '0', '0', '', ''],
-            ['General Knowledge', 'Science', 'Physics', 'descriptive', "State Newton's first law.", '', '', '', '', '', 'HARD', '5', '0', '', '', 'An object stays at rest or uniform motion unless a net force acts.'],
+            ['General Knowledge', 'Science', 'Physics', 'mcq', 'What is the SI unit of force?', 'Newton', 'Joule', 'Watt', 'Pascal', '1', 'EASY', '1', '0', '', 'Force is measured in Newtons.', '', ''],
+            ['General Knowledge', 'Science', 'Physics', 'multi', 'Which are vector quantities?', 'Velocity', 'Speed', 'Acceleration', 'Mass', '1,3', 'MEDIUM', '2', '0', '', '', '', ''],
+            ['General Knowledge', 'Science', 'Physics', 'truefalse', 'Light travels faster than sound.', '', '', '', '', 'true', 'EASY', '1', '0', '', '', '', ''],
+            ['General Knowledge', 'Maths', 'Basics', 'numeric', 'How many metres in 2 km?', '', '', '', '', '2000', 'EASY', '1', '0', '0', '', '', ''],
+            ['Reasoning', 'Puzzles', 'Number Series', 'mcq', 'Which number replaces the question mark?', '18', '19', '20', '21', '2', 'MEDIUM', '3', '0', '', '', 'https://example.com/puzzle1.png'],
+            ['General Knowledge', 'Science', 'Physics', 'descriptive', "State Newton's first law.", '', '', '', '', '', 'HARD', '5', '0', '', '', 'An object stays at rest or uniform motion unless a net force acts.', ''],
         ];
 
         return \App\Support\Spreadsheet::download('examnex-question-template.xlsx', $headers, $rows);

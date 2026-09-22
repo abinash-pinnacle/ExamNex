@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Question extends Model
 {
     protected $fillable = [
-        'type', 'text', 'normalized_text', 'topic_id',
+        'type', 'text', 'image_path', 'normalized_text', 'topic_id',
         'category', 'subject', 'topic', 'difficulty', 'status',
         'marks', 'negative_marks', 'correct_text',
         'numeric_answer', 'numeric_tolerance', 'bool_answer',

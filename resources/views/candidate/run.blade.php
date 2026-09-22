@@ -199,7 +199,10 @@
 
                     {{-- scrollable question + options --}}
                     <div class="px-4 sm:px-6 py-5 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
-                        <p class="text-lg font-semibold text-slate-900 mb-5 leading-relaxed">{{ $q->text }}</p>
+                        <p class="text-lg font-semibold text-slate-900 mb-4 leading-relaxed">{{ $q->text }}</p>
+                        @if ($q->image_path)
+                            <img src="{{ $q->image_path }}" alt="Question figure" class="max-w-full max-h-72 rounded-xl border border-slate-200 mb-5 bg-white">
+                        @endif
 
                         @if (in_array($q->type, ['MCQ_SINGLE','MCQ_MULTI']))
                             <div class="space-y-3">

@@ -238,6 +238,7 @@
                             <span class="text-xs bg-slate-100 px-1.5 rounded">{{ str_replace('_',' ',$q->type) }}</span>
                             @if ($q->subject)<span class="text-[11px] text-slate-400">{{ $q->subject }}@if($q->topic) · {{ $q->topic }}@endif</span>@endif
                             @if ($q->difficulty)<span class="text-[10px] uppercase text-slate-400">{{ $q->difficulty }}</span>@endif
+                            @if ($q->image_path)<span title="Has an image">🖼</span>@endif
                             {{ $q->text }}
                         </span>
                     </label>

@@ -162,6 +162,7 @@
                             @if ($q->difficulty)<span class="text-slate-400">{{ $q->difficulty }}</span>@endif
                             <x-status :value="$q->status" />
                             <span class="text-slate-400">{{ $q->marks }} mark(s)</span>
+                            @if ($q->image_path)<span class="text-slate-400" title="Has an image">🖼</span>@endif
                         </div>
                         <p class="font-medium text-slate-800 truncate">{{ $q->text }}</p>
                         <p class="text-xs text-slate-400 mt-0.5">{{ $q->category ?? '—' }} → {{ $q->subject ?? '—' }} → {{ $q->topic ?? '—' }}</p>
