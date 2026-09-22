@@ -92,8 +92,8 @@
 
         {{-- ---- CENTER: registration form ---- --}}
         <div class="flex-1 min-h-0 overflow-y-auto">
-          <div class="min-h-full flex items-center justify-center p-4 sm:p-8 lg:py-3">
-            <div class="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8 lg:p-6">
+          <div class="min-h-full flex items-center justify-center p-4 sm:p-8 lg:py-2">
+            <div class="w-full max-w-lg bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8 lg:px-6 lg:py-4">
                 <div class="flex items-start gap-3 pb-5 lg:pb-3 border-b border-slate-100">
                     <span class="w-12 h-12 rounded-2xl bg-blue-50 text-brand flex items-center justify-center shrink-0">
                         <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 12h6M9 16h6M6 3h9l5 5v13H6z"/></svg>
@@ -108,7 +108,7 @@
                     </div>
                 </div>
 
-                <p class="text-sm text-slate-500 mt-4 mb-5 lg:mt-2 lg:mb-3">Enter your details to begin the assessment.</p>
+                <p class="text-sm text-slate-500 mt-4 mb-5 lg:mt-1 lg:mb-2">Enter your details to begin the assessment.</p>
 
                 @if ($errors->any())
                     <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
@@ -123,7 +123,7 @@
                     ];
                 @endphp
 
-                <form method="POST" action="{{ route('public.test', $code) }}" class="space-y-4 lg:space-y-2.5">
+                <form method="POST" action="{{ route('public.test', $code) }}" class="space-y-4 lg:space-y-2">
                     @csrf
                     @foreach ($fields as [$name,$label,$ph,$req,$type,$icon])
                         <div>
