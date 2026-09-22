@@ -25,7 +25,7 @@
         ['Tests', route('tests.index'), request()->is('tests*'), 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4'],
         ['Candidates', route('candidates.index'), request()->is('candidates*'), 'M17 20h5v-2a4 4 0 0 0-3-3.87M9 20H4v-2a4 4 0 0 1 3-3.87m6-1.13a4 4 0 1 0-4-4 4 4 0 0 0 4 4z'],
         ['Grading', route('grading.index'), request()->is('grading*'), 'M9 17v-6M12 17v-10M15 17v-3M4 4h16v16H4z'],
-        ['Reports', route('reports.index'), request()->is('reports*'), 'M4 19V5m0 14h16M8 15l3-4 3 2 4-6'],
+        ['Results', route('reports.index'), request()->is('reports*'), 'M4 19V5m0 14h16M8 15l3-4 3 2 4-6'],
         ['Users', route('users.index'), request()->is('users*'), 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z'],
     ];
 @endphp

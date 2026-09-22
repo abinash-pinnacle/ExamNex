@@ -1,8 +1,11 @@
 @extends('layouts.app')
-@section('title', 'Report · '.$test->title)
+@section('title', 'Results · '.$test->title)
 @section('content')
-<div class="flex items-center justify-between mb-5">
-    <h1 class="text-2xl font-bold">{{ $test->title }} — Report</h1>
+<div class="flex items-center justify-between gap-3 mb-5">
+    <div class="min-w-0">
+        <a href="{{ route('reports.index') }}" class="text-xs text-slate-400 hover:text-brand">&larr; All results</a>
+        <h1 class="text-2xl font-bold truncate">{{ $test->title }} — Results</h1>
+    </div>
     <a href="{{ route('reports.export', $test) }}" class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark">⇩ Export Excel</a>
 </div>
 

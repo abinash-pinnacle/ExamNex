@@ -9,7 +9,17 @@ class ReportController extends Controller
 {
     public function index()
     {
-        $tests = Test::withCount('attempts')->where('status', '!=', 'DRAFT')->latest()->get();
+        $tests = Test::where('status', '!=', 'DRAFT')->withCount('attempts')->latest()->get();
+        // Attach a per-test result summary (test-wise results at a glance).
+        $tests->load(['attempts' => fn ($q) => $q->select('id', 'test_id', 'status', 'passed', 'total_score')]);
+        foreach ($tests as $t) {
+            $ev = $t->attempts->where('status', 'EVALUATED');
+            $t->res_evaluated = $ev->count();
+            $t->res_passed = $ev->where('passed', true)->count();
+            $t->res_failed = $ev->where('passed', false)->count();
+            $t->res_avg = $ev->count() ? round($ev->avg('total_score'), 1) : null;
+            $t->res_passrate = $ev->count() ? (int) round($t->res_passed / $ev->count() * 100) : null;
+        }
         return view('reports.index', compact('tests'));
     }
 
