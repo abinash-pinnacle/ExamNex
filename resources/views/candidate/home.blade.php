@@ -15,8 +15,9 @@
 @endphp
 <body class="h-full bg-gradient-to-b from-[#eaf1fb] to-[#f4f8fd] text-slate-800">
 
+<div class="app-shell flex flex-col overflow-hidden">
 {{-- ===== Header ===== --}}
-<header class="bg-white border-b border-slate-100">
+<header class="bg-white border-b border-slate-100 shrink-0">
     <div class="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <x-brand-logo size="w-12 h-12" icon="w-7 h-7" />
@@ -37,7 +38,8 @@
     </div>
 </header>
 
-<main class="max-w-5xl mx-auto px-6 py-8">
+<main class="flex-1 min-h-0 overflow-y-auto">
+<div class="max-w-5xl mx-auto px-6 py-8">
     @include('partials.flash')
 
     <div class="mb-6">
@@ -97,10 +99,12 @@
             </div>
         @endforelse
     </div>
+</div>
 </main>
 
-<footer class="max-w-5xl mx-auto px-6 py-6 flex items-center justify-center text-center text-[11px] text-slate-400">
+<footer class="shrink-0 max-w-5xl mx-auto w-full px-6 py-4 flex items-center justify-center text-center text-[11px] text-slate-400">
     <span>© {{ date('Y') }} PinTek Digital. ExamNex is a product of PinTek Digital. All rights reserved.</span>
 </footer>
+</div>
 </body>
 </html>

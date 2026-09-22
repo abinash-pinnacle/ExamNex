@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Dashboard')
 @section('content')
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
 @php
     $badge = function ($pct) {
         if ($pct > 0) return ['text-emerald-600', '↗ +'.$pct.'%'];
@@ -31,7 +32,7 @@
 @endphp
 
 {{-- Welcome + date --}}
-<div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-6">
+<div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-6 shrink-0">
     <div>
         <h1 class="text-3xl font-extrabold text-slate-900">Welcome back, {{ explode(' ', auth()->user()->name)[0] }}! 👋</h1>
         <p class="text-slate-500 mt-1">Here's what's happening with your exams today.</p>
@@ -47,6 +48,7 @@
     </div>
 </div>
 
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     {{-- LEFT (2 cols) --}}
     <div class="xl:col-span-2 space-y-6">
@@ -191,5 +193,7 @@
             </div>
         </div>
     </div>
+</div>
+</div>
 </div>
 @endsection

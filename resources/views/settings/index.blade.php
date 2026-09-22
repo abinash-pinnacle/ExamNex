@@ -1,9 +1,11 @@
 @extends('layouts.app')
 @section('title', 'Settings')
 @section('content')
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
 @php $isAdmin = auth()->user()->isAdmin(); @endphp
 
-<h1 class="text-3xl font-extrabold text-slate-900 mb-1">Settings</h1>
+<h1 class="text-3xl font-extrabold text-slate-900 mb-1 shrink-0">Settings</h1>
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 <p class="text-slate-500 mb-6">Manage your organization, exam defaults and your account.</p>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -128,5 +130,7 @@
             <button class="bg-brand text-white px-5 py-2.5 rounded-xl font-medium hover:bg-brand-dark">Save account</button>
         </form>
     </div>
+</div>
+</div>
 </div>
 @endsection

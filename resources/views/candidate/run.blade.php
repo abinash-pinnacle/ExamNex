@@ -76,6 +76,28 @@
         </div>
     </div>
 
+    {{-- Submit confirmation (warns about unattempted questions) --}}
+    <div id="submitModal" class="hidden fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="w-14 h-14 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M6 3h9l5 5v13H6z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-center text-slate-900">Submit your exam?</h3>
+            <p class="text-slate-500 text-center mt-1 text-sm">You cannot change your answers after submitting.</p>
+            <div class="mt-3 text-center text-sm font-semibold text-slate-700" id="submitCount"></div>
+            <div id="submitUnanswered" class="hidden mt-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                    <span id="submitUnansweredText"></span>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button type="button" onclick="closeSubmitModal()" class="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-xl font-semibold hover:bg-slate-50">Go back &amp; review</button>
+                <button type="button" id="submitConfirmBtn" onclick="doSubmit(false,false)" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-semibold">Submit</button>
+            </div>
+        </div>
+    </div>
+
     {{-- ===== Body ===== --}}
     <main class="flex-1 min-h-0 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-3 gap-5 overflow-y-auto lg:overflow-hidden">
         {{-- Question area --}}
@@ -381,7 +403,29 @@ window.addEventListener('beforeunload', e => { if (!submitting) { e.preventDefau
 let submitting = false;
 function submitExam(auto, term) {
     if (submitting) return;
-    if (!auto && !confirm('Submit your exam? You cannot change answers after this.')) return;
+    // Auto-submit (time up) and termination submit immediately, no dialog.
+    if (auto) { doSubmit(true, term); return; }
+    // Manual submit: warn about any unattempted questions before finishing.
+    const unanswered = QIDS.map((qid, i) => ({ qid, i })).filter(o => !isAnswered(o.qid));
+    const answered = TOTAL - unanswered.length;
+    document.getElementById('submitCount').textContent = answered + ' of ' + TOTAL + ' questions answered';
+    const box = document.getElementById('submitUnanswered');
+    const btn = document.getElementById('submitConfirmBtn');
+    if (unanswered.length) {
+        box.classList.remove('hidden');
+        document.getElementById('submitUnansweredText').innerHTML =
+            'You have <b>not attempted ' + unanswered.length + ' question' + (unanswered.length > 1 ? 's' : '') + '</b> (Q ' +
+            unanswered.map(o => o.i + 1).join(', ') + '). They will be marked as unanswered.';
+        btn.textContent = 'Submit anyway';
+    } else {
+        box.classList.add('hidden');
+        btn.textContent = 'Submit';
+    }
+    document.getElementById('submitModal').classList.remove('hidden');
+}
+function closeSubmitModal() { document.getElementById('submitModal').classList.add('hidden'); }
+function doSubmit(auto, term) {
+    if (submitting) return;
     submitting = true; window.onbeforeunload = null;
     const f = document.createElement('form'); f.method = 'POST'; f.action = SUBMIT_URL;
     f.innerHTML = `<input type="hidden" name="_token" value="${CSRF}"><input type="hidden" name="auto" value="${auto ? 1 : 0}"><input type="hidden" name="terminated" value="${term ? 1 : 0}">`;

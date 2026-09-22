@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Grading')
 @section('content')
-<h1 class="text-2xl font-bold mb-5">Descriptive Grading Queue</h1>
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<h1 class="text-2xl font-bold mb-5 shrink-0">Descriptive Grading Queue</h1>
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 
 <div class="space-y-4">
     @forelse ($pending as $ans)
@@ -31,5 +33,7 @@
     @empty
         <div class="bg-white rounded-xl shadow-sm p-10 text-center text-slate-400">Nothing to grade. 🎉</div>
     @endforelse
+</div>
+</div>
 </div>
 @endsection

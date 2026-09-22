@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Candidates')
 @section('content')
-<h1 class="text-2xl font-bold mb-1">Candidates <span class="text-slate-400 font-normal text-lg">· Students</span></h1>
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<h1 class="text-2xl font-bold mb-1 shrink-0">Candidates <span class="text-slate-400 font-normal text-lg">· Students</span></h1>
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 <p class="text-slate-500 mb-5 text-sm">Students who take exams. (Staff accounts are under <a href="{{ route('users.index') }}" class="text-brand hover:underline">Users</a>.)</p>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -56,5 +58,7 @@
         </div>
         <div class="mt-3">{{ $candidates->links() }}</div>
     </div>
+</div>
+</div>
 </div>
 @endsection

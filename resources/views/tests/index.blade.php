@@ -1,11 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Tests')
 @section('content')
-<div class="flex items-center justify-between mb-5">
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<div class="flex items-center justify-between mb-5 shrink-0">
     <h1 class="text-2xl font-bold">Tests</h1>
     <a href="{{ route('tests.create') }}" class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark">+ New Test</a>
 </div>
-
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
     <div class="overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
         <thead class="bg-slate-50 text-slate-500 text-left">
@@ -34,4 +35,6 @@
     </table></div>
 </div>
 <div class="mt-4">{{ $tests->links() }}</div>
+</div>
+</div>
 @endsection

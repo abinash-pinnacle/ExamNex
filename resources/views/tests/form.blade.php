@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', $test ? 'Edit Test' : 'Create Test')
 @section('content')
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
 @php
     $editing = (bool) $test;
     $src = $test ?? ($prefill ?? null);
@@ -15,10 +16,11 @@
     $qorder = old('question_order', $src->question_order ?? 'SHUFFLE');
 @endphp
 
-<div class="flex items-center gap-2 text-sm text-slate-500 mb-3">
+<div class="flex items-center gap-2 text-sm text-slate-500 mb-3 shrink-0">
     <a href="{{ route('tests.index') }}" class="hover:text-brand">Tests</a> <span>›</span>
     <span class="text-slate-700 font-medium">{{ $editing ? 'Edit Test' : 'Create Test' }}</span>
 </div>
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 
 <form method="POST" action="{{ $editing ? route('tests.update', $test) : route('tests.store') }}" id="testForm">
     @csrf
@@ -270,4 +272,6 @@
     descCount(); syncPreview();
 </script>
 @endpush
+</div>
+</div>
 @endsection

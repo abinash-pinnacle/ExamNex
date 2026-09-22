@@ -1,7 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Monitor · '.$test->title)
 @section('content')
-<div class="flex items-center justify-between mb-5">
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<div class="flex items-center justify-between mb-5 shrink-0">
     <div>
         <h1 class="text-2xl font-bold">Live Monitor</h1>
         <p class="text-slate-500 text-sm">{{ $test->title }} · {{ $totalQ }} questions</p>
@@ -11,6 +12,7 @@
         <button onclick="location.reload()" class="bg-brand text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark">↻ Refresh</button>
     </div>
 </div>
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 
 {{-- Summary --}}
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
@@ -110,4 +112,6 @@
 <p class="text-xs text-slate-400 mt-3">Auto-refreshes every 15 seconds · rows highlighted red = violations / terminated (possible cheating).</p>
 
 @push('scripts')<script>setTimeout(() => location.reload(), 15000);</script>@endpush
+</div>
+</div>
 @endsection

@@ -1,10 +1,11 @@
 @extends('layouts.app')
 @section('title', 'AI Question Generator')
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6">
-    <h1 class="text-2xl font-bold">✨ AI Question Generator</h1>
-    <p class="text-sm text-slate-500 -mt-4">Drafts are reviewed by you, then saved through the same import pipeline (dedup + hierarchy apply).</p>
+<div class="max-w-4xl mx-auto space-y-6 lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+    <h1 class="text-2xl font-bold shrink-0">✨ AI Question Generator</h1>
+    <p class="text-sm text-slate-500 -mt-4 shrink-0">Drafts are reviewed by you, then saved through the same import pipeline (dedup + hierarchy apply).</p>
 
+    <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1 space-y-6">
     <div class="bg-white rounded-xl shadow-sm p-6">
         <form method="POST" action="{{ route('questions.ai.generate') }}" class="grid grid-cols-2 md:grid-cols-3 gap-4">
             @csrf
@@ -76,5 +77,6 @@
             </div>
         </form>
     @endif
+    </div>
 </div>
 @endsection

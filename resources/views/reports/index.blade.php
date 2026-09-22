@@ -1,10 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Results')
 @section('content')
-<div class="mb-5">
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<div class="mb-5 shrink-0">
     <h1 class="text-2xl font-bold">Results</h1>
     <p class="text-sm text-slate-500 mt-0.5">Test-wise results — pass rate, average score and every candidate's outcome.</p>
 </div>
+<div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
 
 @if ($tests->isEmpty())
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center text-slate-400">
@@ -53,4 +55,6 @@
     @endforeach
 </div>
 @endif
+</div>
+</div>
 @endsection

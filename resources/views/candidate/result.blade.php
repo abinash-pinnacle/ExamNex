@@ -9,7 +9,8 @@
     <style>:root{--brand-rgb: {{ \App\Models\Setting::brandRgb() }};--brand-dark-rgb: {{ \App\Models\Setting::brandDarkRgb() }};}</style>
 </head>
 <body class="h-full bg-gradient-to-b from-[#eaf1fb] to-[#f4f8fd] text-slate-800">
-<main class="min-h-screen flex items-center justify-center px-4 py-10">
+<main class="app-shell overflow-y-auto">
+    <div class="min-h-full flex items-center justify-center px-4 py-10">
     <div class="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center">
         @if ($attempt->terminated)
             <div class="w-16 h-16 mx-auto rounded-full bg-rose-100 flex items-center justify-center mb-4">
@@ -35,6 +36,7 @@
 
         <div class="text-xs text-slate-400 mt-6">Submitted on {{ optional($attempt->submitted_at)->format('d M Y, h:i A') }}</div>
         <a href="{{ route('candidate.home') }}" class="inline-block mt-6 text-brand font-medium hover:underline">← Back to my tests</a>
+    </div>
     </div>
 </main>
 </body>

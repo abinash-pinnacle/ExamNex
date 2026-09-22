@@ -1,11 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Import Questions')
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6">
-    <div class="flex items-center justify-between">
+<div class="max-w-3xl mx-auto space-y-6 lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+    <div class="flex items-center justify-between shrink-0">
         <h1 class="text-2xl font-bold">Import Questions (Excel / CSV)</h1>
         <a href="{{ route('questions.template') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">⬇ Download Excel template</a>
     </div>
+    <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1 space-y-6">
 
     <div class="bg-white rounded-xl shadow-sm p-6">
         <form method="POST" action="{{ route('questions.import') }}" enctype="multipart/form-data" class="space-y-4">
@@ -54,5 +55,6 @@
             @endif
         </div>
     @endif
+    </div>
 </div>
 @endsection
