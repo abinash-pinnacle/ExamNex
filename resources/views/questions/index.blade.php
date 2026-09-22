@@ -1,7 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Question Bank')
 @section('content')
-<div class="flex items-center justify-between mb-5">
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<div class="flex items-center justify-between mb-5 shrink-0">
     <h1 class="text-2xl font-bold">Question Bank</h1>
     <div class="flex gap-2">
         <a href="{{ route('questions.ai') }}" class="bg-white border border-slate-300 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">✨ AI Generate</a>
@@ -10,9 +11,9 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:flex-1 lg:min-h-0">
     {{-- Folder tree + management --}}
-    <aside class="lg:col-span-1 space-y-4">
+    <aside class="lg:col-span-1 space-y-4 lg:overflow-y-auto lg:min-h-0 lg:pr-1">
         {{-- Tree --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
             <div class="flex items-center justify-between mb-3">
@@ -26,7 +27,7 @@
                 <span class="text-xs {{ !request('topic_id') ? 'text-white/80' : 'text-slate-400' }}">{{ $totalQuestions }}</span>
             </a>
 
-            <div class="space-y-1 max-h-[28rem] overflow-y-auto pr-1">
+            <div class="space-y-1 max-h-[28rem] lg:max-h-none overflow-y-auto pr-1">
                 @forelse ($folders as $folder)
                     @php $fCount = $folder->subjects->flatMap->topics->sum('questions_count'); @endphp
                     <details class="group" open>
@@ -136,8 +137,8 @@
     @endpush
 
     {{-- List + filters --}}
-    <section class="lg:col-span-3 space-y-4">
-        <form method="GET" class="bg-white rounded-xl shadow-sm p-3 flex flex-wrap gap-2 text-sm">
+    <section class="lg:col-span-3 space-y-4 lg:flex lg:flex-col lg:min-h-0">
+        <form method="GET" class="bg-white rounded-xl shadow-sm p-3 flex flex-wrap gap-2 text-sm shrink-0">
             <input name="search" value="{{ request('search') }}" placeholder="Search text…" class="flex-1 min-w-40 rounded border-slate-300 border px-3 py-1.5">
             <select name="type" class="rounded border-slate-300 border px-2 py-1.5">
                 <option value="">All types</option>
@@ -152,7 +153,7 @@
             <button class="bg-brand text-white px-3 rounded">Filter</button>
         </form>
 
-        <div class="bg-white rounded-xl shadow-sm divide-y">
+        <div class="bg-white rounded-xl shadow-sm divide-y lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
             @forelse ($questions as $q)
                 <div class="p-4 flex items-start justify-between gap-4">
                     <div class="min-w-0">
@@ -177,7 +178,8 @@
                 <p class="p-8 text-center text-slate-400">No questions found.</p>
             @endforelse
         </div>
-        {{ $questions->links() }}
+        <div class="shrink-0">{{ $questions->links() }}</div>
     </section>
+</div>
 </div>
 @endsection
