@@ -1,7 +1,8 @@
 @extends('layouts.app')
 @section('title', $test->title)
 @section('content')
-<div class="flex items-start justify-between mb-5">
+<div class="lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
+<div class="flex items-start justify-between mb-5 shrink-0">
     <div>
         <h1 class="text-2xl font-bold">{{ $test->title }}</h1>
         <div class="flex items-center gap-2 mt-1 text-sm text-slate-500">
@@ -25,7 +26,7 @@
 </div>
 
 @if ($publicUrl)
-    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6 shrink-0">
         <div class="text-sm font-medium text-indigo-800 mb-1">Shared public link (students self-register)</div>
         <div class="flex gap-2">
             <input readonly value="{{ $publicUrl }}" class="flex-1 rounded-lg border-indigo-200 border px-3 py-2 text-sm bg-white" id="publicUrl">
@@ -34,7 +35,7 @@
     </div>
 @endif
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:content-start lg:pr-1">
     {{-- Questions on the test --}}
     <div class="bg-white rounded-xl shadow-sm p-5">
         <div class="font-semibold mb-3">Questions ({{ $test->testQuestions->count() }})</div>
@@ -98,5 +99,6 @@
             </div>
         @endif
     </div>
+</div>
 </div>
 @endsection
