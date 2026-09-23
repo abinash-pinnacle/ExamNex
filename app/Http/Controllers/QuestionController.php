@@ -173,16 +173,19 @@ class QuestionController extends Controller
             'option1', 'option2', 'option3', 'option4', 'correct',
             'difficulty', 'marks', 'negative', 'tolerance', 'explanation', 'modelanswer', 'image'];
 
+        // All example rows use ONE folder → subject → topic so a straight upload of
+        // the template creates a single, clean topic (not several scattered ones).
+        // Replace these rows with your own questions; keep the header row as-is.
         $rows = [
             ['General Knowledge', 'Science', 'Physics', 'mcq', 'What is the SI unit of force?', 'Newton', 'Joule', 'Watt', 'Pascal', '1', 'EASY', '1', '0', '', 'Force is measured in Newtons.', '', ''],
-            ['General Knowledge', 'Science', 'Physics', 'multi', 'Which are vector quantities?', 'Velocity', 'Speed', 'Acceleration', 'Mass', '1,3', 'MEDIUM', '2', '0', '', '', '', ''],
+            ['General Knowledge', 'Science', 'Physics', 'multi', 'Which of these are vector quantities?', 'Velocity', 'Speed', 'Acceleration', 'Mass', '1,3', 'MEDIUM', '2', '0', '', '', '', ''],
             ['General Knowledge', 'Science', 'Physics', 'truefalse', 'Light travels faster than sound.', '', '', '', '', 'true', 'EASY', '1', '0', '', '', '', ''],
-            ['General Knowledge', 'Maths', 'Basics', 'numeric', 'How many metres in 2 km?', '', '', '', '', '2000', 'EASY', '1', '0', '0', '', '', ''],
-            ['Reasoning', 'Puzzles', 'Number Series', 'mcq', 'Which number replaces the question mark?', '18', '19', '20', '21', '2', 'MEDIUM', '3', '0', '', '', 'https://example.com/puzzle1.png'],
-            ['General Knowledge', 'Science', 'Physics', 'descriptive', "State Newton's first law.", '', '', '', '', '', 'HARD', '5', '0', '', '', 'An object stays at rest or uniform motion unless a net force acts.', ''],
+            ['General Knowledge', 'Science', 'Physics', 'numeric', 'How many metres are there in 2 kilometres?', '', '', '', '', '2000', 'EASY', '1', '0', '0', '', '', ''],
+            ['General Knowledge', 'Science', 'Physics', 'descriptive', "State Newton's first law of motion.", '', '', '', '', '', 'HARD', '5', '0', '', '', 'An object stays at rest or in uniform motion unless acted on by a net external force.', ''],
         ];
 
-        return \App\Support\Spreadsheet::download('examnex-question-template.xlsx', $headers, $rows);
+        // No title band: the header MUST stay in row 1 so the file re-imports cleanly.
+        return \App\Support\Spreadsheet::download('examnex-question-template.xlsx', $headers, $rows, null, null, 'Questions');
     }
 
     /** Map form fields to a QuestionService input array. */

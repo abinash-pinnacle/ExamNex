@@ -116,6 +116,6 @@ class ReportController extends Controller
             ? $test->sections()->count() . ' sections · overall pass ' . $test->passing_marks . ' / ' . $test->total_marks
             : 'Pass mark ' . $test->passing_marks . ' / ' . $test->total_marks;
 
-        return Spreadsheet::download($filename, $headers, $rows, $test->title . ' — Results', $sub);
+        return Spreadsheet::download($filename, $headers, $rows, $test->title . ' — Results', $sub, 'Results');
     }
 }

@@ -64,11 +64,11 @@ class Spreadsheet
      * @param  string|null                    $title    Optional title band shown above the table.
      * @param  string|null                    $subtitle Optional line under the title (e.g. a date range).
      */
-    public static function download(string $filename, array $headers, array $rows, ?string $title = null, ?string $subtitle = null)
+    public static function download(string $filename, array $headers, array $rows, ?string $title = null, ?string $subtitle = null, string $sheetName = 'Sheet1')
     {
         $ss = new PhpSpreadsheet();
         $sheet = $ss->getActiveSheet();
-        $sheet->setTitle('Report');
+        $sheet->setTitle($sheetName);
 
         $ss->getProperties()->setCreator('ExamNex')->setTitle($title ?: 'ExamNex Report');
 
