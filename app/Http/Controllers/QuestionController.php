@@ -103,7 +103,7 @@ class QuestionController extends Controller
     {
         $request->validate([
             'text' => 'required|string|max:5000',
-            'type' => ['required', \Illuminate\Validation\Rule::in(['MCQ_SINGLE', 'MCQ_MULTI', 'TRUE_FALSE', 'FILL_BLANK', 'NUMERIC', 'DESCRIPTIVE'])],
+            'type' => ['required', \Illuminate\Validation\Rule::in(['MCQ_SINGLE', 'MCQ_MULTI', 'MCQ_BLANKS', 'TRUE_FALSE', 'FILL_BLANK', 'NUMERIC', 'DESCRIPTIVE'])],
             // Optional question image (e.g. a reasoning/puzzle diagram). No SVG (stored-XSS).
             'image' => 'nullable|image|mimes:png,jpg,jpeg,webp,gif|max:4096',
         ], [], ['text' => 'question text']);
@@ -226,6 +226,28 @@ class QuestionController extends Controller
                     'text' => $text,
                     'isCorrect' => in_array((string) $i, array_map('strval', $correct), true),
                 ];
+            }
+            $input['options'] = $options;
+        } elseif ($type === 'MCQ_BLANKS') {
+            // Multi-blank: each blank is its own option group with exactly one correct option.
+            // Form posts blank_option[i][j] (texts) and blank_correct[i] (the correct j for blank i).
+            $blanks = (array) $request->input('blank_option', []);
+            $corrects = (array) $request->input('blank_correct', []);
+            $options = [];
+            $group = 0;
+            foreach ($blanks as $i => $texts) {
+                $ci = isset($corrects[$i]) && $corrects[$i] !== '' ? (int) $corrects[$i] : -1;
+                $groupOpts = [];
+                foreach ((array) $texts as $j => $text) {
+                    if (trim((string) $text) === '') {
+                        continue;
+                    }
+                    $groupOpts[] = ['text' => $text, 'isCorrect' => ((int) $j === $ci), 'group' => $group];
+                }
+                if ($groupOpts) {
+                    $options = array_merge($options, $groupOpts);
+                    $group++;
+                }
             }
             $input['options'] = $options;
         } elseif ($type === 'TRUE_FALSE') {

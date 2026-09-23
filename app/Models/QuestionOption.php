@@ -9,11 +9,11 @@ class QuestionOption extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['question_id', 'text', 'is_correct', 'order'];
+    protected $fillable = ['question_id', 'text', 'is_correct', 'order', 'option_group'];
 
     protected function casts(): array
     {
-        return ['is_correct' => 'boolean', 'order' => 'integer'];
+        return ['is_correct' => 'boolean', 'order' => 'integer', 'option_group' => 'integer'];
     }
 
     public function question(): BelongsTo { return $this->belongsTo(Question::class); }

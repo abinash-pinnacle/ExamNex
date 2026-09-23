@@ -215,6 +215,26 @@
                                     </label>
                                 @endforeach
                             </div>
+                        @elseif ($q->type === 'MCQ_BLANKS')
+                            @php $groups = $item['options']->groupBy('option_group'); @endphp
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                @foreach ($groups as $gi => $gopts)
+                                    @php $bn = $loop->iteration; @endphp
+                                    <div class="rounded-xl border border-slate-200 p-3">
+                                        <div class="text-xs font-bold text-brand uppercase tracking-wide mb-2">Blank {{ $bn }}</div>
+                                        <div class="space-y-2">
+                                            @foreach ($gopts as $opt)
+                                                <label class="flex items-center gap-3 border rounded-lg px-3 py-2.5 cursor-pointer transition border-slate-200 hover:border-brand/50 has-[:checked]:border-brand has-[:checked]:bg-blue-50">
+                                                    <input type="radio" name="q{{ $q->id }}_b{{ $gi }}" value="{{ $opt->id }}"
+                                                           @checked(in_array($opt->id, $sel)) onchange="onAnswer({{ $q->id }})"
+                                                           class="answer-input w-4 h-4 shrink-0" style="accent-color:rgb(var(--brand-rgb))">
+                                                    <span class="text-slate-700 text-sm"><span class="font-bold mr-1">{{ chr(97 + $loop->index) }})</span>{{ $opt->text }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         @elseif ($q->type === 'TRUE_FALSE')
                             <div class="space-y-3">
                                 @foreach (['1'=>'True','0'=>'False'] as $v=>$lbl)

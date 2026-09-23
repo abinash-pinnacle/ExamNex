@@ -200,7 +200,7 @@
             </select>
             <select name="type" onchange="this.form.submit()" class="rounded-lg border border-slate-300 px-2 py-2 text-sm">
                 <option value="">Any type</option>
-                @foreach (['MCQ_SINGLE','MCQ_MULTI','TRUE_FALSE','FILL_BLANK','NUMERIC','DESCRIPTIVE'] as $t)<option value="{{ $t }}" @selected($filters['type']===$t)>{{ str_replace('_',' ',$t) }}</option>@endforeach
+                @foreach (['MCQ_SINGLE','MCQ_MULTI','MCQ_BLANKS','TRUE_FALSE','FILL_BLANK','NUMERIC','DESCRIPTIVE'] as $t)<option value="{{ $t }}" @selected($filters['type']===$t)>{{ str_replace('_',' ',$t) }}</option>@endforeach
             </select>
             <div class="col-span-2 md:col-span-4 flex items-center gap-2">
                 <button class="border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-50">Apply filters</button>

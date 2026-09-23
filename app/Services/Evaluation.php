@@ -56,6 +56,21 @@ class Evaluation
                 $correct = $chosen === $correctIds && count($correctIds) > 0;
                 break;
             }
+            case 'MCQ_BLANKS': {
+                // Correct only when EVERY blank's selected option is that blank's correct one.
+                $chosen = array_map('intval', $selected);
+                $groups = $q->options->groupBy('option_group');
+                $correct = $groups->count() > 0;
+                foreach ($groups as $opts) {
+                    $correctId = (int) optional($opts->firstWhere('is_correct', true))->id;
+                    $selInGroup = $opts->pluck('id')->map('intval')->intersect($chosen)->values();
+                    if ($selInGroup->count() !== 1 || (int) $selInGroup->first() !== $correctId) {
+                        $correct = false;
+                        break;
+                    }
+                }
+                break;
+            }
             case 'TRUE_FALSE':
                 $correct = $a->bool_answer !== null && $a->bool_answer === (bool) $q->bool_answer;
                 break;

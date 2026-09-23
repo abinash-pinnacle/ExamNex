@@ -47,6 +47,23 @@ class QuestionService
                 return 'Single-answer questions need exactly one correct option.';
             }
         }
+        if ($type === 'MCQ_BLANKS') {
+            $groups = [];
+            foreach ($options as $o) {
+                $groups[(int) ($o['group'] ?? 0)][] = $o;
+            }
+            if (count($groups) < 1) {
+                return 'Add at least one blank with its options.';
+            }
+            foreach ($groups as $gi => $opts) {
+                if (count($opts) < 2) {
+                    return 'Blank ' . ($gi + 1) . ' needs at least two options.';
+                }
+                if (count(array_filter($opts, fn ($o) => ! empty($o['isCorrect']))) !== 1) {
+                    return 'Blank ' . ($gi + 1) . ' must have exactly one correct option.';
+                }
+            }
+        }
         if ($type === 'FILL_BLANK' && empty(trim($d['correctText'] ?? ''))) {
             return 'Provide the accepted answer(s).';
         }
@@ -195,6 +212,7 @@ class QuestionService
                 'text' => $o['text'],
                 'is_correct' => ! empty($o['isCorrect']),
                 'order' => $i,
+                'option_group' => (int) ($o['group'] ?? 0),
             ]);
         }
     }

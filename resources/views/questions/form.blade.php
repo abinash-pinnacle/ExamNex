@@ -15,6 +15,22 @@
     $folderNames = $folders->pluck('name')->unique()->values();
     $subjectNames = $folders->flatMap->subjects->pluck('name')->unique()->values();
     $topicNames = $folders->flatMap->subjects->flatMap->topics->pluck('name')->unique()->values();
+
+    // Multi-blank (MCQ_BLANKS) prefill: one group per blank, each with its options.
+    $blanks = [];
+    if (old('blank_option') !== null) {
+        $bc = (array) old('blank_correct', []);
+        foreach ((array) old('blank_option') as $i => $texts) {
+            $ci = isset($bc[$i]) && $bc[$i] !== '' ? (int) $bc[$i] : -1;
+            $o = [];
+            foreach ((array) $texts as $j => $t) { $o[] = ['text' => $t, 'correct' => ((int) $j === $ci)]; }
+            $blanks[] = ['options' => $o];
+        }
+    } elseif ($editing && $type === 'MCQ_BLANKS') {
+        foreach ($question->options->groupBy('option_group') as $opts) {
+            $blanks[] = ['options' => $opts->map(fn ($o) => ['text' => $o->text, 'correct' => (bool) $o->is_correct])->values()->all()];
+        }
+    }
 @endphp
 
 <div class="max-w-3xl mx-auto lg:h-[calc(100%_-_4rem)] lg:flex lg:flex-col lg:min-h-0">
@@ -53,7 +69,7 @@
             <div class="col-span-2">
                 <label class="block text-sm font-medium mb-1">Type</label>
                 <select name="type" id="type" class="w-full rounded-lg border-slate-300 border px-3 py-2">
-                    @foreach (['MCQ_SINGLE'=>'MCQ (single)','MCQ_MULTI'=>'MCQ (multiple)','TRUE_FALSE'=>'True / False','FILL_BLANK'=>'Fill in the blank','NUMERIC'=>'Numeric','DESCRIPTIVE'=>'Descriptive'] as $val=>$lbl)
+                    @foreach (['MCQ_SINGLE'=>'MCQ (single)','MCQ_MULTI'=>'MCQ (multiple)','MCQ_BLANKS'=>'Multi-blank (fill each blank)','TRUE_FALSE'=>'True / False','FILL_BLANK'=>'Fill in the blank','NUMERIC'=>'Numeric','DESCRIPTIVE'=>'Descriptive'] as $val=>$lbl)
                         <option value="{{ $val }}" @selected($type===$val)>{{ $lbl }}</option>
                     @endforeach
                 </select>
@@ -121,6 +137,33 @@
             <button type="button" id="addopt" class="mt-2 text-sm text-brand hover:underline">+ Add option</button>
         </div>
 
+        {{-- Multi-blank (each blank has its own options; tick the correct one per blank) --}}
+        <div data-type="MCQ_BLANKS" class="type-block">
+            <label class="block text-sm font-medium mb-1">Blanks
+                <span class="text-slate-400 font-normal">— put <code class="bg-slate-100 px-1 rounded">___</code> in the question for each blank; add a blank below for each, and tick its correct option</span>
+            </label>
+            <div id="blanks" class="space-y-3"></div>
+            <button type="button" id="addblank" class="mt-2 text-sm font-medium text-brand hover:underline">+ Add blank</button>
+
+            <template id="blankTpl">
+                <div class="blank rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="blank-title text-sm font-bold text-brand">Blank 1</span>
+                        <button type="button" onclick="removeBlank(this)" class="text-rose-500 text-xs hover:underline">Remove blank</button>
+                    </div>
+                    <div class="blank-opts space-y-1.5"></div>
+                    <button type="button" onclick="addBlankOption(this)" class="mt-1.5 text-xs text-brand hover:underline">+ Add option</button>
+                </div>
+            </template>
+            <template id="blankOptTpl">
+                <div class="flex items-center gap-2 bopt-row">
+                    <input type="radio" class="bopt-correct shrink-0" title="Mark as the correct option for this blank">
+                    <input type="text" class="bopt-text flex-1 rounded-lg border-slate-300 border px-3 py-1.5 text-sm bg-white" placeholder="Option text">
+                    <button type="button" onclick="this.closest('.bopt-row').remove();bReindex()" class="text-rose-500 text-sm shrink-0">✕</button>
+                </div>
+            </template>
+        </div>
+
         {{-- True/False --}}
         <div data-type="TRUE_FALSE" class="type-block">
             <label class="block text-sm font-medium mb-1">Correct answer</label>
@@ -174,6 +217,32 @@ function previewImg(input) {
     const img = document.getElementById('imgPreview');
     if (input.files && input.files[0]) { img.src = URL.createObjectURL(input.files[0]); img.classList.remove('hidden'); }
 }
+// ---- Multi-blank builder ----
+function bReindex() {
+    document.querySelectorAll('#blanks .blank').forEach((blank, i) => {
+        blank.querySelector('.blank-title').textContent = 'Blank ' + (i + 1);
+        blank.querySelectorAll('.bopt-row').forEach((row, j) => {
+            row.querySelector('.bopt-correct').name = 'blank_correct[' + i + ']';
+            row.querySelector('.bopt-correct').value = j;
+            row.querySelector('.bopt-text').name = 'blank_option[' + i + '][' + j + ']';
+        });
+    });
+}
+function addBlankOptRow(blank, o) {
+    const row = document.getElementById('blankOptTpl').content.cloneNode(true).querySelector('.bopt-row');
+    if (o) { row.querySelector('.bopt-text').value = o.text || ''; if (o.correct) row.querySelector('.bopt-correct').checked = true; }
+    blank.querySelector('.blank-opts').appendChild(row);
+}
+function addBlankOption(btn) { addBlankOptRow(btn.closest('.blank')); bReindex(); }
+function removeBlank(btn) { btn.closest('.blank').remove(); bReindex(); }
+function addBlank(data) {
+    const blank = document.getElementById('blankTpl').content.cloneNode(true).querySelector('.blank');
+    document.getElementById('blanks').appendChild(blank);
+    const opts = (data && data.options && data.options.length) ? data.options
+        : [{ text: '', correct: true }, { text: '', correct: false }, { text: '', correct: false }];
+    opts.forEach(o => addBlankOptRow(blank, o));
+    bReindex();
+}
 (function () {
     const typeSel = document.getElementById('type');
     function refreshType() {
@@ -184,7 +253,12 @@ function previewImg(input) {
         // radio vs checkbox for correct toggles
         const isMulti = t === 'MCQ_MULTI';
         document.querySelectorAll('.correct-toggle').forEach(cb => { cb.type = isMulti ? 'checkbox' : 'radio'; });
+        // When switching to multi-blank with nothing set up yet, seed two blanks.
+        if (t === 'MCQ_BLANKS' && document.querySelectorAll('#blanks .blank').length === 0) { addBlank(); addBlank(); }
     }
+    // Prefill existing / old() blanks before first refresh.
+    (@json($blanks)).forEach(b => addBlank(b));
+    document.getElementById('addblank').addEventListener('click', () => addBlank());
     typeSel.addEventListener('change', refreshType);
     refreshType();
 

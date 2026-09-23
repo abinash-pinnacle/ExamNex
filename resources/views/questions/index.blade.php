@@ -142,7 +142,7 @@
             <input name="search" value="{{ request('search') }}" placeholder="Search text…" class="flex-1 min-w-40 rounded border-slate-300 border px-3 py-1.5">
             <select name="type" class="rounded border-slate-300 border px-2 py-1.5">
                 <option value="">All types</option>
-                @foreach (['MCQ_SINGLE','MCQ_MULTI','TRUE_FALSE','FILL_BLANK','NUMERIC','DESCRIPTIVE'] as $t)
+                @foreach (['MCQ_SINGLE','MCQ_MULTI','MCQ_BLANKS','TRUE_FALSE','FILL_BLANK','NUMERIC','DESCRIPTIVE'] as $t)
                     <option value="{{ $t }}" @selected(request('type')===$t)>{{ str_replace('_',' ',$t) }}</option>
                 @endforeach
             </select>
