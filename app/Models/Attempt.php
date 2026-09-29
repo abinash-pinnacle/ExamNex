@@ -14,7 +14,7 @@ class Attempt extends Model
         'test_id', 'candidate_id', 'status', 'started_at', 'deadline_at',
         'submitted_at', 'last_saved_at', 'system_check_passed', 'violations',
         'question_order', 'auto_score', 'manual_score', 'total_score',
-        'max_score', 'passed', 'resume_count', 'terminated', 'section_state', 'result_reason',
+        'max_score', 'passed', 'resume_count', 'terminated', 'section_state', 'result_reason', 'held', 'held_at',
     ];
 
     protected function casts(): array
@@ -26,6 +26,8 @@ class Attempt extends Model
             'last_saved_at' => 'datetime',
             'system_check_passed' => 'boolean',
             'terminated' => 'boolean',
+            'held' => 'boolean',
+            'held_at' => 'datetime',
             'question_order' => 'array',
             'auto_score' => 'float',
             'manual_score' => 'float',

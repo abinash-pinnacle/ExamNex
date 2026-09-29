@@ -29,7 +29,7 @@
     </div>
     <div class="rounded-xl shadow-sm p-5 text-center border {{ $pending ? 'bg-white border-slate-100' : ($attempt->passed ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200') }}">
         <div class="text-xs {{ $pending ? 'text-slate-400' : ($attempt->passed ? 'text-emerald-600' : 'text-rose-600') }}">Overall Status</div>
-        <div class="text-4xl font-extrabold mt-1 {{ $pending ? 'text-slate-400' : ($attempt->passed ? 'text-emerald-700' : 'text-rose-700') }}">{{ $pending ? 'PENDING' : ($attempt->passed ? '✓ PASS' : '✕ FAIL') }}</div>
+        <div class="text-4xl font-extrabold mt-1 {{ $pending ? 'text-slate-400' : ($attempt->passed ? 'text-emerald-700' : 'text-rose-700') }}">{{ $pending ? 'PENDING' : ($attempt->passed ? '✓ PASS' : '✕ Not Qualified') }}</div>
         @if ($pending)<div class="text-xs text-slate-400 mt-1">Descriptive answers awaiting grading</div>@endif
     </div>
     <div class="bg-white rounded-xl shadow-sm p-5">
@@ -67,7 +67,7 @@
                         <td class="px-3 py-2 text-center text-xs"><span class="text-emerald-600 font-semibold">{{ $r->correct }}</span> / <span class="text-rose-600 font-semibold">{{ $r->wrong }}</span> / <span class="text-slate-500">{{ $r->unanswered }}</span></td>
                         <td class="px-3 py-2 text-center">
                             @if ($r->passed === true)<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">✓ PASS</span>
-                            @elseif ($r->passed === false)<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">✕ FAIL</span>
+                            @elseif ($r->passed === false)<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">✕ Not Qualified</span>
                             @else<span class="text-xs text-slate-400">Pending</span>@endif
                         </td>
                     </tr>
@@ -78,7 +78,7 @@
 @endif
 
 @if (! $pending)
-    <div class="rounded-xl py-3 text-center font-extrabold text-lg text-white {{ $attempt->passed ? 'bg-emerald-600' : 'bg-rose-600' }}">FINAL RESULT: {{ $attempt->passed ? 'PASS ✓' : 'FAIL ✕' }}</div>
+    <div class="rounded-xl py-3 text-center font-extrabold text-lg text-white {{ $attempt->passed ? 'bg-emerald-600' : 'bg-rose-600' }}">FINAL RESULT: {{ $attempt->passed ? 'PASS ✓' : 'NOT QUALIFIED ✕' }}</div>
 @endif
 </div>
 </div>

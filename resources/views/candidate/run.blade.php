@@ -113,12 +113,19 @@
     </div>
 
     {{-- Termination overlay --}}
-    <div id="termOverlay" class="hidden fixed inset-0 z-[70] bg-rose-900/95 text-white flex items-center justify-center p-4 text-center">
-        <div>
-            <svg class="w-16 h-16 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
-            <h3 class="text-2xl font-bold mt-4">Exam Terminated</h3>
-            <p class="mt-2 opacity-90">You repeatedly left the exam window. Your test has been submitted and marked as <b>FAIL</b>.</p>
-            <p class="text-sm opacity-70 mt-2">Submitting…</p>
+    <div id="holdOverlay" class="hidden fixed inset-0 z-[70] bg-slate-900/95 text-white flex items-center justify-center p-4 text-center">
+        <div class="max-w-md">
+            <div class="w-16 h-16 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center">
+                <svg class="w-9 h-9 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold mt-4">Exam On Hold</h3>
+            <p class="mt-2 opacity-90">Your exam has been put on hold because you repeatedly left the exam window. The invigilator has been notified.</p>
+            <p class="mt-2 opacity-90">You can continue only after the invigilator <b>resumes</b> your exam. <span class="text-amber-300">Your time keeps running.</span></p>
+            <div class="mt-4 inline-flex items-center gap-2 border border-white/20 rounded-xl px-4 py-2 font-mono text-xl">
+                <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span id="holdTimer">--:--</span>
+            </div>
+            <p class="text-xs opacity-60 mt-3">Waiting for the invigilator to resume…</p>
         </div>
     </div>
 
@@ -355,7 +362,7 @@
                 <svg class="w-6 h-6 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
                 <div class="text-sm">
                     <div class="font-bold text-rose-700">Important!</div>
-                    <p class="text-slate-600 mt-0.5 leading-snug">Do not switch tabs or leave this page. Leaving is logged and may terminate your exam and mark you as <span class="font-bold text-rose-600">FAIL.</span></p>
+                    <p class="text-slate-600 mt-0.5 leading-snug">Do not switch tabs or leave this page. Leaving is logged and may put your exam <span class="font-bold text-amber-600">ON HOLD</span> until an invigilator resumes it.</p>
                 </div>
             </div>
 
@@ -382,6 +389,9 @@ const SAVE_URL = `{{ url('candidate/attempt/'.$attempt->id.'/save') }}`;
 const EVENT_URL = `{{ route('attempt.event', $attempt->id) }}`;
 const SUBMIT_URL = `{{ route('attempt.submit', $attempt->id) }}`;
 const SECTION_URL = `{{ route('attempt.section', $attempt->id) }}`;
+const STATUS_URL = `{{ route('attempt.status', $attempt->id) }}`;
+const RESULT_URL = `{{ route('attempt.result', $attempt->id) }}`;
+const HELD_ON_LOAD = {{ $attempt->held ? 'true' : 'false' }};
 const QIDS = [{{ collect($paper)->map(fn($p)=>$p['question']->id)->implode(',') }}];
 const TOTAL = QIDS.length;
 // ---- Sections (empty for plain tests) ----
@@ -515,6 +525,7 @@ function fmtMs(ms) {
 }
 function tick() {
     const ms = deadline - Date.now();
+    const ht = document.getElementById('holdTimer'); if (ht) ht.textContent = fmtMs(Math.max(0, ms));
     const t = document.getElementById('timer'), mini = document.getElementById('timerMini'), ov = document.getElementById('timerOverall');
     if (ms <= 0) { t.textContent = '00:00'; if (mini) mini.textContent = '00:00'; submitExam(true); return; }
     let shown = ms;
@@ -539,7 +550,8 @@ const SEC = {
 };
 const MAX_WARNINGS = SEC.warn ? 1 : 0;   // with warnings: 1 warning then terminate; without: terminate on first
 let violations = 0;
-let terminated = false;
+let held = false;
+let holdPoll = null;
 
 function logViolation() {
     // Send the CSRF token IN THE BODY so the beacon passes VerifyCsrfToken
@@ -555,12 +567,12 @@ function logViolation() {
     } catch (_) {}
 }
 function handleViolation(reason) {
-    if (terminated || submitting) return;
+    if (held || submitting) return;
     violations++;
     logViolation();
-    if (violations > MAX_WARNINGS) { terminate(); return; }
+    if (violations > MAX_WARNINGS) { hold(); return; }
     document.getElementById('cheatMsg').textContent = reason;
-    document.getElementById('cheatCount').textContent = 'Next time your exam will be terminated and marked as FAIL.';
+    document.getElementById('cheatCount').textContent = 'Next time your exam will be put ON HOLD — you will need the invigilator to resume it.';
     document.getElementById('cheatModal').classList.remove('hidden');
 }
 function dismissCheat() { document.getElementById('cheatModal').classList.add('hidden'); }
@@ -599,11 +611,33 @@ function deterScreenshot() {
     setTimeout(() => w.classList.add('hidden'), 3000);
 }
 
-function terminate() {
-    terminated = true;
+async function hold(skipEvent) {
+    if (held) return;
+    held = true;
     document.getElementById('cheatModal').classList.add('hidden');
-    document.getElementById('termOverlay').classList.remove('hidden');
-    setTimeout(() => submitExam(true, true), 1200);
+    document.getElementById('holdOverlay').classList.remove('hidden');
+    // Make sure the SERVER registers the hold — don't rely only on the fire-and-forget beacon.
+    if (!skipEvent) {
+        try {
+            await fetch(EVENT_URL, { method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' }, body: '_token=' + encodeURIComponent(CSRF), keepalive: true });
+        } catch (_) {}
+    }
+    startHoldPolling();
+}
+function startHoldPolling() {
+    if (holdPoll) return;
+    let sawHeld = false;   // only lift the overlay AFTER the server has confirmed the hold
+    const check = async () => {
+        try {
+            const r = await fetch(STATUS_URL, { headers: { 'X-CSRF-TOKEN': CSRF }, cache: 'no-store' });
+            const d = await r.json();
+            if (d.ended) { clearInterval(holdPoll); holdPoll = null; window.onbeforeunload = null; location.href = RESULT_URL; return; }
+            if (d.held) { sawHeld = true; }
+            else if (sawHeld) { clearInterval(holdPoll); holdPoll = null; held = false; document.getElementById('holdOverlay').classList.add('hidden'); }
+        } catch (_) {}
+    };
+    holdPoll = setInterval(check, 4000);
+    setTimeout(check, 1200);   // brief delay so the hold registers server-side first
 }
 
 window.addEventListener('beforeunload', e => { if (!submitting) { e.preventDefault(); e.returnValue = ''; } });
@@ -653,6 +687,7 @@ document.querySelectorAll('.qpane').forEach(card => {
 });
 paintPalette();
 updateProgress();
+if (HELD_ON_LOAD) hold(true);
 </script>
 </body>
 </html>

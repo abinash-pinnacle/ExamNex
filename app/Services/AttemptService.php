@@ -143,6 +143,10 @@ class AttemptService
         if ($attempt->status !== 'IN_PROGRESS') {
             return ['ok' => false, 'error' => 'Attempt already submitted'];
         }
+        // On hold for malpractice: no answers accepted until an admin resumes it.
+        if ($attempt->held) {
+            return ['ok' => false, 'error' => 'Your exam is on hold. Please wait for the invigilator to resume it.', 'held' => true];
+        }
         // Small grace so a save in flight at the buzzer still lands.
         if ($attempt->deadline_at->getTimestamp() * 1000 + 5000 < now()->getTimestamp() * 1000) {
             return ['ok' => false, 'error' => 'Time expired'];
@@ -218,24 +222,39 @@ class AttemptService
         $attempt->refresh();
 
         $test = $attempt->test;
-        // Mirror the client rule: with warnings, 1 warning is allowed then terminate;
-        // without warnings, terminate on the first violation. Only tests that opt
-        // into tab-switch prevention terminate.
+        // Mirror the client rule: with warnings, 1 warning is allowed then hold;
+        // without warnings, hold on the first violation. Only tests that opt into
+        // tab-switch prevention hold.
+        //
+        // HOLD (not terminate): the exam clock keeps running and the candidate is
+        // blocked from answering until an admin/invigilator resumes the attempt.
         if ($test && $test->prevent_tab_switch) {
             $limit = $test->show_warning ? 1 : 0;
             if ($attempt->violations > $limit) {
-                self::finalize($attemptId, $candidateId, 'AUTO_SUBMITTED');
-                Attempt::where('id', $attemptId)->update([
-                    'terminated' => true,
-                    'passed' => false,
-                    'status' => 'EVALUATED',
-                    'result_reason' => 'Terminated for malpractice (left the exam window).',
-                ]);
-                Audit::log('attempt.terminated', ['entity' => 'Attempt', 'entity_id' => $attemptId, 'detail' => ['server' => true, 'violations' => $attempt->violations]]);
-                return ['ok' => true, 'terminated' => true];
+                if (! $attempt->held) {
+                    Attempt::where('id', $attemptId)->update([
+                        'held' => true,
+                        'held_at' => now(),
+                        'result_reason' => 'On hold — repeatedly left the exam window (malpractice).',
+                    ]);
+                    Audit::log('attempt.held', ['entity' => 'Attempt', 'entity_id' => $attemptId, 'detail' => ['server' => true, 'violations' => $attempt->violations]]);
+                }
+                return ['ok' => true, 'held' => true];
             }
         }
-        return ['ok' => true, 'terminated' => false];
+        return ['ok' => true, 'held' => false];
+    }
+
+    /** Admin/invigilator lifts a hold so the candidate can carry on answering. */
+    public static function resumeHold(int $attemptId): array
+    {
+        $attempt = Attempt::where('id', $attemptId)->where('status', 'IN_PROGRESS')->first();
+        if (! $attempt) {
+            return ['ok' => false, 'error' => 'This attempt is no longer in progress.'];
+        }
+        $attempt->update(['held' => false]);
+        Audit::log('attempt.resumeHold', ['entity' => 'Attempt', 'entity_id' => $attemptId]);
+        return ['ok' => true];
     }
 
     public static function submit(int $attemptId, int $candidateId, bool $auto = false, bool $terminated = false): array

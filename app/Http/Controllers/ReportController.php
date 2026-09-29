@@ -97,7 +97,7 @@ class ReportController extends Controller
                 $a->manual_score,
                 $a->total_score,
                 $a->max_score ?? $test->total_marks,
-                $a->passed === null ? '' : ($a->passed ? 'PASS' : 'FAIL'),
+                $a->passed === null ? '' : ($a->passed ? 'PASS' : 'Not Qualified'),
                 $a->result_reason,
                 $a->terminated ? 'YES (malpractice)' : 'No',
                 $a->submitted_at?->ist()?->toDateTimeString(),
@@ -107,7 +107,7 @@ class ReportController extends Controller
             foreach ($sections as $s) {
                 $r = $bySection->get($s->id);
                 $row[] = $r ? $r->score : '';
-                $row[] = $r ? ($r->passed === null ? 'PENDING' : ($r->passed ? 'PASS' : 'FAIL')) : '';
+                $row[] = $r ? ($r->passed === null ? 'PENDING' : ($r->passed ? 'PASS' : 'Not Qualified')) : '';
             }
             $rows[] = $row;
         }

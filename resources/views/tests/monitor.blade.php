@@ -68,6 +68,16 @@
                         @if ($a && $a->terminated)
                             <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-rose-600 text-white ml-1">TERMINATED</span>
                         @endif
+                        @if ($a && $a->held && $a->status === 'IN_PROGRESS')
+                            <div class="mt-1.5 flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> ON HOLD
+                                </span>
+                                <form method="POST" action="{{ route('attempts.resume', $a) }}" onsubmit="return confirm('Resume this candidate\'s exam? They will be able to answer again.')">@csrf
+                                    <button class="inline-flex items-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-2.5 py-1">▶ Resume</button>
+                                </form>
+                            </div>
+                        @endif
                     </td>
                     <td class="px-4 py-3">
                         @if ($r->status === 'NOT_STARTED')
@@ -91,7 +101,7 @@
                     <td class="px-4 py-3">
                         @if ($a && $a->status === 'EVALUATED')
                             <span class="font-semibold {{ $a->passed ? 'text-emerald-600' : 'text-rose-600' }}">{{ rtrim(rtrim(number_format($a->total_score ?? 0, 1), '0'), '.') }}/{{ $a->max_score ?? $test->total_marks }}</span>
-                            <span class="text-xs {{ $a->passed ? 'text-emerald-600' : 'text-rose-600' }}">{{ $a->passed ? 'PASS' : 'FAIL' }}</span>
+                            <span class="text-xs {{ $a->passed ? 'text-emerald-600' : 'text-rose-600' }}">{{ $a->passed ? 'PASS' : 'Not Qualified' }}</span>
                         @else
                             <span class="text-slate-300">—</span>
                         @endif

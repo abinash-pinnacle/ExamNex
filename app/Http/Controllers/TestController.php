@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attempt;
 use App\Models\Question;
 use App\Models\Test;
 use App\Models\TestQuestion;
 use App\Models\TestSection;
 use App\Models\User;
+use App\Services\AttemptService;
 use App\Services\SectionService;
 use App\Support\Audit;
 use Illuminate\Http\Request;
@@ -522,5 +524,15 @@ class TestController extends Controller
         ];
 
         return view('tests.monitor', compact('test', 'rows', 'summary', 'totalQ'));
+    }
+
+    /** Lift a malpractice hold so the candidate can resume answering. */
+    public function resumeAttempt(Attempt $attempt)
+    {
+        $res = AttemptService::resumeHold($attempt->id);
+        if (! $res['ok']) {
+            return back()->withErrors(['resume' => $res['error'] ?? 'Could not resume.']);
+        }
+        return back()->with('status', 'Exam resumed for ' . ($attempt->candidate?->name ?? 'the candidate') . '.');
     }
 }

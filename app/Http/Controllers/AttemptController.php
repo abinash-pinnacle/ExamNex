@@ -115,7 +115,25 @@ class AttemptController extends Controller
     {
         abort_unless($attempt->candidate_id === $request->user()->id, 403);
         $res = AttemptService::logExamEvent($attempt->id, $request->user()->id);
-        return response()->json(['ok' => true, 'terminated' => $res['terminated'] ?? false]);
+        return response()->json(['ok' => true, 'held' => $res['held'] ?? false]);
+    }
+
+    /**
+     * Lightweight poll used by the exam page while it is on hold: reports whether
+     * the hold has been lifted, whether the attempt ended, and time remaining.
+     */
+    public function status(Request $request, Attempt $attempt)
+    {
+        abort_unless($attempt->candidate_id === $request->user()->id, 403);
+        if ($attempt->status === 'IN_PROGRESS' && $attempt->deadline_at->isPast()) {
+            AttemptService::submit($attempt->id, $request->user()->id, true);
+            $attempt->refresh();
+        }
+        return response()->json([
+            'held' => (bool) $attempt->held,
+            'ended' => $attempt->status !== 'IN_PROGRESS',
+            'remainingMs' => max(0, $attempt->deadline_at->getTimestamp() * 1000 - now()->getTimestamp() * 1000),
+        ]);
     }
 
     public function submit(Request $request, Attempt $attempt)

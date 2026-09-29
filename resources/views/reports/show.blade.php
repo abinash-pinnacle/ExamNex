@@ -75,7 +75,7 @@
                     <td class="px-4 py-2">{{ $a->total_score !== null ? $fmt($a->total_score).' / '.$fmt($a->max_score ?? $test->total_marks) : '—' }}</td>
                     <td class="px-4 py-2">
                         @if ($a->passed === true)<span class="text-emerald-600 font-medium">✓ PASS</span>
-                        @elseif ($a->passed === false)<span class="text-rose-600 font-medium" title="{{ $a->result_reason }}">✕ FAIL</span>
+                        @elseif ($a->passed === false)<span class="text-rose-600 font-medium" title="{{ $a->result_reason }}">✕ Not Qualified</span>
                         @else — @endif
                         @if ($a->terminated)<span class="ml-1 text-xs bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">terminated</span>@endif
                         @if ($a->passed === false && $a->result_reason && ! $a->terminated)<div class="text-[11px] text-slate-400 max-w-[220px] truncate" title="{{ $a->result_reason }}">{{ $a->result_reason }}</div>@endif

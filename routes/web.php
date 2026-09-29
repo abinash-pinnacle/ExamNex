@@ -74,6 +74,7 @@ Route::middleware(['auth', 'role:ADMIN,TEST_CREATOR'])->group(function () {
     Route::post('/tests/{test}/publish', [TestController::class, 'publish'])->name('tests.publish');
     Route::post('/tests/{test}/archive', [TestController::class, 'archive'])->name('tests.archive');
     Route::get('/tests/{test}/monitor', [TestController::class, 'monitor'])->name('tests.monitor');
+    Route::post('/attempts/{attempt}/resume', [TestController::class, 'resumeAttempt'])->name('attempts.resume');
 
     // Grading
     Route::get('/grading', [GradingController::class, 'index'])->name('grading.index');
@@ -114,6 +115,7 @@ Route::middleware(['auth', 'role:CANDIDATE'])->group(function () {
     Route::post('/candidate/attempt/{attempt}/save', [AttemptController::class, 'save'])->name('attempt.save');
     Route::post('/candidate/attempt/{attempt}/section', [AttemptController::class, 'section'])->name('attempt.section');
     Route::post('/candidate/attempt/{attempt}/event', [AttemptController::class, 'event'])->name('attempt.event');
+    Route::get('/candidate/attempt/{attempt}/status', [AttemptController::class, 'status'])->name('attempt.status');
     Route::post('/candidate/attempt/{attempt}/submit', [AttemptController::class, 'submit'])->name('attempt.submit');
     Route::get('/candidate/attempt/{attempt}/result', [AttemptController::class, 'result'])->name('attempt.result');
     Route::get('/candidate/attempt/{attempt}/certificate', [AttemptController::class, 'certificate'])->name('attempt.certificate');

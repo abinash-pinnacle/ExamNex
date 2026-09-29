@@ -54,7 +54,7 @@
                 </div>
                 <div class="rounded-xl border p-4 text-center {{ $attempt->passed ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200' }}">
                     <div class="text-xs {{ $attempt->passed ? 'text-emerald-600' : 'text-rose-600' }}">Overall Status</div>
-                    <div class="text-3xl font-extrabold mt-1 {{ $attempt->passed ? 'text-emerald-700' : 'text-rose-700' }}">{{ $attempt->passed ? '✓ PASS' : '✕ FAIL' }}</div>
+                    <div class="text-3xl font-extrabold mt-1 {{ $attempt->passed ? 'text-emerald-700' : 'text-rose-700' }}">{{ $attempt->passed ? '✓ PASS' : '✕ Not Qualified' }}</div>
                 </div>
             </div>
             @if (! $attempt->passed && $attempt->result_reason)
@@ -78,7 +78,7 @@
                                         <td class="px-3 py-2 text-right text-slate-500">{{ $fmt($r->qualifying_marks) }}</td>
                                         <td class="px-3 py-2 text-center">
                                             @if ($r->passed === true)<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">✓ PASS</span>
-                                            @elseif ($r->passed === false)<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">✕ FAIL</span>
+                                            @elseif ($r->passed === false)<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">✕ Not Qualified</span>
                                             @else<span class="text-xs text-slate-400">Pending</span>@endif
                                         </td>
                                     </tr>
@@ -96,7 +96,7 @@
             </div>
 
             <div class="mt-5 rounded-xl py-3 text-center font-extrabold text-lg {{ $attempt->passed ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white' }}">
-                FINAL RESULT: {{ $attempt->passed ? 'PASS ✓' : 'FAIL ✕' }}
+                FINAL RESULT: {{ $attempt->passed ? 'PASS ✓' : 'NOT QUALIFIED ✕' }}
             </div>
             @if ($test->completion_message)<p class="text-slate-600 text-sm text-center mt-4">{{ $test->completion_message }}</p>@endif
 
